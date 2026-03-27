@@ -1,97 +1,209 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+MediCare - Sistema de Gestión de Medicamentos
 
-# Getting Started
+Descripción General
+MediCare es una aplicación móvil de React Native diseñada para ayudar a usuarios (especialmente adultos mayores) a gestionar la toma de sus medicamentos diarios. La aplicación proporciona un seguimiento completo de medicamentos, horarios, historial y gestión del perfil de usuario.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Características Principales
 
-## Step 1: Start Metro
+✓ Gestión de Medicamentos: Agregar, editar y eliminar medicamentos con dosis, horarios y frecuencia
+✓ Seguimiento Diario: Marcar medicamentos como tomados o pendientes
+✓ Historial de Horarios: Ver historial de medicamentos por fecha
+✓ Perfil de Usuario: Guardar información personal, médica y contactos de emergencia
+✓ Interfaz Amigable: Diseño optimizado para adultos mayores con texto grande y colores contrastantes
+✓ Persistencia Local: Todos los datos se guardan localmente en el dispositivo
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Estructura del Proyecto
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
 ```
+AppMedicamentos/
+├── src/
+│   ├── screens/              # Pantallas principales
+│   │   ├── HomeScreen.tsx           # Medicamentos de hoy
+│   │   ├── MedicationsScreen.tsx    # Gestión de medicamentos
+│   │   ├── SchedulesScreen.tsx      # Historial de horarios
+│   │   └── ProfileScreen.tsx        # Perfil del usuario
+│   ├── components/           # Componentes reutilizables
+│   │   ├── ActionButton.tsx         # Botón de acción
+│   │   ├── StatusBadge.tsx          # Insignia de estado
+│   │   ├── MedicationCard.tsx       # Tarjeta de medicamento
+│   │   ├── AddEditMedicationModal.tsx # Modal para agregar/editar
+│   │   └── CustomTabBar.tsx         # Barra de navegación inferior
+│   ├── context/              # Context API para estado global
+│   │   ├── MedicationContext.tsx    # Gestión de medicamentos
+│   │   └── UserContext.tsx          # Gestión de perfil de usuario
+│   ├── utils/                # Funciones de utilidad
+│   │   ├── theme.ts                 # Tema y constantes de diseño
+│   │   ├── dateUtils.ts             # Funciones para fechas
+│   │   └── storage.ts               # Operaciones de almacenamiento
+│   └── types/                # Definiciones de TypeScript
+│       └── index.ts          # Interfaces y tipos
+├── App.tsx                   # Componente principal con navegación
+├── index.js                  # Punto de entrada de la aplicación
+└── package.json              # Dependencias del proyecto
 
-## Step 2: Build and run your app
+Instalación y Configuración
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+1. Instalar Dependencias:
+   npm install
+   # o
+   pnpm install
 
-### Android
+2. Compilar para Android:
+   react-native run-android
 
-```sh
-# Using npm
-npm run android
+3. Compilar para iOS (requiere macOS):
+   cd ios && pod install && cd ..
+   react-native run-ios
 
-# OR using Yarn
-yarn android
-```
+Requisitos:
+- Node.js >= 20
+- React Native CLI
+- Android Studio (para desarrollo en Android)
+- Xcode (para desarrollo en iOS)
 
-### iOS
+Pantallas y Funcionalidades
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+🏠 Inicio (Home)
+- Muestra medicamentos del día actual
+- Visualiza la fecha formateada en español
+- Permite marcar medicamentos como tomados
+- Acceso rápido a agregar medicamentos o ver historial
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+💊 Medicamentos
+- Lista todos los medicamentos registrados
+- Agregar nuevos medicamentos con:
+  * Nombre y dosis
+  * Frecuencia (diaria o días específicos)
+  * Horarios de toma múltiples
+  * Color de identificación
+- Editar medicamentos existentes
+- Eliminar medicamentos
+- Buscar entre medicamentos
 
-```sh
-bundle install
-```
+📅 Horarios
+- Vista de horarios por fecha
+- Seleccionar diferentes fechas (últimos 7 días, hoy, próximos 7 días)
+- Estadísticas de cumplimiento (tomados, pendientes, total)
+- Código de colores por estado
 
-Then, and every time you update your native dependencies, run:
+👤 Perfil
+- Información personal (nombre, edad, email, teléfono)
+- Información médica (médico, teléfono del médico)
+- Contacto de emergencia
+- Modo edición para actualizar información
+- Persistencia de datos
 
-```sh
-bundle exec pod install
-```
+Sistema de Colores
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+- Azul (#2E5BFF): Color primario, botones principales
+- Verde (#00C851): Estado "Tomado", éxito
+- Naranja (#FFB300): Estado "Pendiente", acciones secundarias
+- Rojo (#E74C3C): Estado "No tomado", peligro
+- Gris (#F5F5F5): Fondo
+- Blanco (#FFFFFF): Superficie de componentes
 
-```sh
-# Using npm
-npm run ios
+Tecnologías Utilizadas
 
-# OR using Yarn
-yarn ios
-```
+- React Native 0.83.0
+- TypeScript 5.8.3
+- React Navigation 6.x (Bottom Tabs)
+- AsyncStorage para almacenamiento local
+- Context API para gestión de estado
+- React Native Gesture Handler
+- React Native Reanimated
+- React Native Vector Icons
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Almacenamiento de Datos
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+Los datos se almacenan localmente usando AsyncStorage con las siguientes claves:
 
-## Step 3: Modify your app
+@medicare_medications    - Medicamentos registrados
+@medicare_schedules     - Horarios de medicamentos
+@medicare_user          - Perfil del usuario
+@medicare_appointments  - Citas médicas
 
-Now that you have successfully run the app, let's make changes!
+Estructura de Datos
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+Medicamento:
+{
+  id: string
+  name: string
+  dosage: string
+  frequency: 'daily' | 'specific_days'
+  times: string[] // Horarios (ej: "08:00")
+  specificDays?: number[] // 0-6 para días específicos
+  color: string
+  icon: string
+  notes?: string
+  createdAt: number
+}
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+Horario de Medicamento:
+{
+  id: string
+  medicationId: string
+  date: string // YYYY-MM-DD
+  time: string // HH:mm
+  status: 'pending' | 'taken' | 'missed'
+  takenAt?: number
+  notes?: string
+}
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+Perfil de Usuario:
+{
+  id: string
+  name: string
+  age: number
+  email: string
+  phone: string
+  doctorName?: string
+  doctorPhone?: string
+  emergencyContact?: string
+  emergencyPhone?: string
+}
 
-## Congratulations! :tada:
+Próximas Mejoras
 
-You've successfully run and modified your React Native App. :partying_face:
+- Notificaciones push para recordatorios de medicamentos
+- Vista de calendario con estadísticas mensuales
+- Integración con contactos de emergencia
+- Exportación de historial
+- Sincronización con servidor
+- Autenticación de usuario
+- Multi-idioma (inglés, portugués)
+- Modo oscuro
 
-### Now what?
+Solución de Problemas
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+Error: "Cannot find module '@react-navigation'"
+Solución: Ejecutar npm install nuevamente
 
-# Troubleshooting
+Error: "AST entry points list does not contain"
+Solución: Limpiar cache - npm start --reset-cache
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+Los medicamentos no persisten
+Solución: Verificar que AsyncStorage esté instalado correctamente
 
-# Learn More
+Contribución y Desarrollo
 
-To learn more about React Native, take a look at the following resources:
+El código está organizado siguiendo principios de Clean Architecture:
+- Separación de concerns (screens, components, context, utils)
+- Componentes reutilizables
+- Tipado fuerte con TypeScript
+- Gestión centralizada de estado
+- Funciones de utilidad centralizadas
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Para agregar nuevas funcionalidades:
+1. Crear tipos en src/types/index.ts
+2. Agregar lógica a context si afecta estado global
+3. Crear componentes en src/components/ si son reutilizables
+4. Usar screens para pantallas específicas
+
+Licencia
+Proyecto privado - Todos los derechos reservados
+
+Contacto y Soporte
+Para reportar problemas o sugerencias, contacte al equipo de desarrollo.
+
+Versión: 1.0.0
+Última actualización: Marzo 2026
