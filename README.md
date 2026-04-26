@@ -1,97 +1,128 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# MediCare - App de Gestión de Medicamentos
 
-# Getting Started
+Una aplicación móvil de React Native diseñada para ayudar a los usuarios a controlar la ingesta de medicamentos, registrar historiales y recibir consejos de salud.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 📋 Características
 
-## Step 1: Start Metro
+- **Pantalla de Inicio**: Vista general del día con medicamentos pendientes y adherencia
+- **Agregar Medicamentos**: Formulario completo para registrar nuevos medicamentos con dosis, frecuencia y horarios
+- **Mis Medicinas**: Listado de todos los medicamentos registrados con opciones de editar/eliminar
+- **Historial**: Seguimiento diario de medicamentos tomados y no tomados
+- **Consejos de Salud**: Recomendaciones sobre adherencia, almacenamiento y efectos secundarios
+- **Almacenamiento Local**: Todos los datos se guardan localmente con AsyncStorage
+- **Interfaz Intuitiva**: Diseño accesible con navegación por pestañas
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🛠 Requisitos
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- Node.js >= 20
+- React Native CLI
+- Android SDK (para compilación Android)
+- Android Studio (para emulación)
 
-```sh
-# Using npm
+## 📦 Instalación
+
+```bash
+# Clonar el repositorio
+git clone <repo-url>
+cd AppMedicamentos
+
+# Instalar dependencias
+npm install
+# o
+pnpm install
+```
+
+## 🚀 Ejecución
+
+### En emulador de Android Studio
+
+```bash
+# En una terminal
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# En otra terminal
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+O directamente:
+```bash
+npx react-native run-android
 ```
 
-Then, and every time you update your native dependencies, run:
+## 📁 Estructura del Proyecto
 
-```sh
-bundle exec pod install
+```
+src/
+├── screens/
+│   ├── HomeScreen.tsx          # Pantalla principal
+│   ├── AddMedicationScreen.tsx # Agregar medicamento
+│   ├── MyMedicinesScreen.tsx    # Lista de medicinas
+│   ├── HistoryScreen.tsx        # Historial
+│   └── TipsScreen.tsx           # Consejos de salud
+├── components/
+│   ├── MedicationCard.tsx       # Tarjeta de medicamento
+│   ├── MedicineListItem.tsx     # Elemento de lista
+│   ├── BottomTabBar.tsx         # Navegación inferior
+│   ├── HistoryDateCard.tsx      # Tarjeta de actividad
+│   └── TipCard.tsx              # Tarjeta de consejo
+├── types/
+│   └── medication.ts            # Tipos TypeScript
+├── styles/
+│   └── colors.ts                # Sistema de colores
+└── utils/
+    ├── storage.ts               # Gestión de datos
+    └── adherence.ts             # Cálculos de adherencia
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## 🎨 Diseño y Colores
 
-```sh
-# Using npm
-npm run ios
+- **Primario**: Azul (#1e40af)
+- **Secundario**: Naranja (#ff8a00)
+- **Éxito**: Verde (#10b981)
+- **Error**: Rojo (#ef4444)
 
-# OR using Yarn
-yarn ios
-```
+## 💾 Persistencia de Datos
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+La aplicación utiliza **AsyncStorage** para almacenar:
+- **Medicamentos**: Lista de medicamentos activos
+- **Historial**: Registro de tomas diarias
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 📱 Tecnologías
 
-## Step 3: Modify your app
+- React Native 0.75.2
+- TypeScript
+- React Navigation 6
+- AsyncStorage
+- DateTimePicker
+- React Native Vector Icons
 
-Now that you have successfully run the app, let's make changes!
+## 🔧 Scripts Disponibles
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+- `npm start` - Inicia el servidor Metro
+- `npm run android` - Ejecuta en emulador Android
+- `npm test` - Ejecuta tests
+- `npm run lint` - Ejecuta linter
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## 📝 Notas de Desarrollo
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+- La app está optimizada solo para **Android**
+- Todos los datos se guardan localmente en el dispositivo
+- No requiere backend externo
+- Compatible con Android 5.0+
 
-## Congratulations! :tada:
+## 📄 Licencia
 
-You've successfully run and modified your React Native App. :partying_face:
+Privado
 
-### Now what?
+## ✅ Próximas Características
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+- [ ] Notificaciones push automáticas
+- [ ] Sincronización con cloud
+- [ ] Modo oscuro
+- [ ] Gráficos de adherencia
+- [ ] Exportación de reportes
 
-# Troubleshooting
+---
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**Versión**: 1.0.0  
+**Última actualización**: 2026
