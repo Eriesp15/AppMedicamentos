@@ -1,4 +1,4 @@
-export type AppTab = 'home' | 'medicines' | 'history' | 'tips';
+export type AppTab = 'home' | 'medicines' | 'history' | 'tips' | 'profile';
 
 export type Medicine = {
   id: string;
@@ -27,4 +27,14 @@ export type MedicineForm = {
   frequency: string;
   startTime: string;
   notes: string;
+};
+
+export type UserProfile = {
+  fullName: string;
+  age: string;
+  phone: string;
+  emergencyContact: string;
+  bloodType: string;
+  allergies: string;
+  chronicConditions: string;
 };

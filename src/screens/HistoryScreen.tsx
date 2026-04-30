@@ -1,5 +1,6 @@
 import React from 'react';
 import {Text, TouchableOpacity, View, ScrollView} from 'react-native';
+import {ProfileAvatarButton} from '../components/ProfileAvatarButton';
 import {COLORS} from '../constants/theme';
 import {appStyles} from '../styles/appStyles';
 import {ActivityItem} from '../types/medication';
@@ -10,6 +11,8 @@ type Props = {
   onPreviousDay: () => void;
   onNextDay: () => void;
   activities: ActivityItem[];
+  onOpenProfile: () => void;
+  profileName: string;
 };
 
 export function HistoryScreen({
@@ -17,10 +20,15 @@ export function HistoryScreen({
   onPreviousDay,
   onNextDay,
   activities,
+  onOpenProfile,
+  profileName,
 }: Props) {
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <Text style={appStyles.appTitle}>Mi Historial</Text>
+      <View style={appStyles.headerRow}>
+        <Text style={appStyles.appTitle}>Mi Historial</Text>
+        <ProfileAvatarButton fullName={profileName} onPress={onOpenProfile} />
+      </View>
 
       <View style={appStyles.historyDateNav}>
         <TouchableOpacity style={appStyles.navRoundButton} onPress={onPreviousDay}>

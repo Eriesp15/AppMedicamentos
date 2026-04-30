@@ -1,8 +1,9 @@
-import {AppTab, MedicineForm} from '../types/medication';
+import {AppTab, MedicineForm, UserProfile} from '../types/medication';
 
 export const STORAGE_KEYS = {
   MEDICINES: '@medicare/medicines',
   ACTIVITY: '@medicare/activity',
+  PROFILE: '@medicare/profile',
 };
 
 export const TAB_ITEMS: {id: AppTab; label: string; icon: string}[] = [
@@ -10,6 +11,7 @@ export const TAB_ITEMS: {id: AppTab; label: string; icon: string}[] = [
   {id: 'medicines', label: 'Medicinas', icon: '💊'},
   {id: 'history', label: 'Historial', icon: '📋'},
   {id: 'tips', label: 'Consejos', icon: '💡'},
+  {id: 'profile', label: 'Perfil', icon: '👤'},
 ];
 
 export const FREQUENCIES = [
@@ -49,3 +51,13 @@ export const TIPS = [
       'Guarda medicamentos lejos de humedad, calor y luz directa para mantener eficacia.',
   },
 ];
+
+export const DEFAULT_PROFILE: UserProfile = {
+  fullName: 'Maria',
+  age: '',
+  phone: '',
+  emergencyContact: '',
+  bloodType: '',
+  allergies: '',
+  chronicConditions: '',
+};

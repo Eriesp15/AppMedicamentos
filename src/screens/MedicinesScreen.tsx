@@ -1,5 +1,6 @@
 import React from 'react';
 import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {ProfileAvatarButton} from '../components/ProfileAvatarButton';
 import {FREQUENCIES} from '../constants/data';
 import {appStyles} from '../styles/appStyles';
 import {Medicine} from '../types/medication';
@@ -9,6 +10,8 @@ type Props = {
   onOpenNewForm: () => void;
   onOpenEditForm: (medicine: Medicine) => void;
   onDeleteMedicine: (medicineId: string) => void;
+  onOpenProfile: () => void;
+  profileName: string;
 };
 
 export function MedicinesScreen({
@@ -16,14 +19,21 @@ export function MedicinesScreen({
   onOpenNewForm,
   onOpenEditForm,
   onDeleteMedicine,
+  onOpenProfile,
+  profileName,
 }: Props) {
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <View style={appStyles.rowBetween}>
+      <View style={appStyles.headerRow}>
         <View>
           <Text style={appStyles.appTitle}>Mis Medicinas</Text>
           <Text style={appStyles.softText}>Total: {medicines.length}</Text>
         </View>
+        <ProfileAvatarButton fullName={profileName} onPress={onOpenProfile} />
+      </View>
+
+      <View style={appStyles.rowBetween}>
+        <Text style={appStyles.softText}>Lista completa de medicamentos</Text>
         <TouchableOpacity style={appStyles.countBadge}>
           <Text style={appStyles.countBadgeText}>{medicines.length} activos</Text>
         </TouchableOpacity>

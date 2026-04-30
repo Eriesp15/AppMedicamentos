@@ -1,16 +1,18 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Alert} from 'react-native';
-import {EMPTY_MEDICINE_FORM} from '../constants/data';
+import {DEFAULT_PROFILE, EMPTY_MEDICINE_FORM} from '../constants/data';
 import {
   ActivityItem,
   AppTab,
   Medicine,
   MedicineForm,
+  UserProfile,
 } from '../types/medication';
 import {
   loadPersistedData,
   persistActivity,
   persistMedicines,
+  persistProfile,
 } from '../storage/medicationStorage';
 
 export function useMedicationManager() {
@@ -21,6 +23,7 @@ export function useMedicationManager() {
 
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [form, setForm] = useState<MedicineForm>(EMPTY_MEDICINE_FORM);
 
   useEffect(() => {
@@ -29,6 +32,9 @@ export function useMedicationManager() {
         const data = await loadPersistedData();
         setMedicines(data.medicines);
         setActivity(data.activity);
+        if (data.profile) {
+          setProfile(data.profile);
+        }
       } catch {
         Alert.alert('Error', 'No se pudo cargar la informacion local.');
       }
@@ -43,6 +49,10 @@ export function useMedicationManager() {
   useEffect(() => {
     persistActivity(activity).catch(() => {});
   }, [activity]);
+
+  useEffect(() => {
+    persistProfile(profile).catch(() => {});
+  }, [profile]);
 
   const todayKey = useMemo(() => new Date().toDateString(), []);
 
@@ -165,6 +175,8 @@ export function useMedicationManager() {
     setSelectedHistoryDate,
     medicines,
     activity,
+    profile,
+    setProfile,
     form,
     setForm,
     takenTodayCount,

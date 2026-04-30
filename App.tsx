@@ -6,9 +6,11 @@ import {useMedicationManager} from './src/hooks/useMedicationManager';
 import {HistoryScreen} from './src/screens/HistoryScreen';
 import {HomeScreen} from './src/screens/HomeScreen';
 import {MedicinesScreen} from './src/screens/MedicinesScreen';
+import {ProfileScreen} from './src/screens/ProfileScreen';
 import {TipsScreen} from './src/screens/TipsScreen';
 import {appStyles} from './src/styles/appStyles';
 import {COLORS} from './src/constants/theme';
+import {Alert} from 'react-native';
 
 function App() {
   const {
@@ -20,6 +22,8 @@ function App() {
     selectedHistoryDate,
     setSelectedHistoryDate,
     medicines,
+    profile,
+    setProfile,
     form,
     setForm,
     takenTodayCount,
@@ -45,6 +49,8 @@ function App() {
           onMarkTaken={markTaken}
           onMarkMissed={markMissed}
           onOpenNewForm={openNewForm}
+          onOpenProfile={() => setActiveTab('profile')}
+          profileName={profile.fullName}
         />
       )}
 
@@ -54,6 +60,8 @@ function App() {
           onOpenNewForm={openNewForm}
           onOpenEditForm={openEditForm}
           onDeleteMedicine={deleteMedicine}
+          onOpenProfile={() => setActiveTab('profile')}
+          profileName={profile.fullName}
         />
       )}
 
@@ -75,10 +83,25 @@ function App() {
             })
           }
           activities={selectedDateActivities}
+          onOpenProfile={() => setActiveTab('profile')}
+          profileName={profile.fullName}
         />
       )}
 
-      {activeTab === 'tips' && <TipsScreen />}
+      {activeTab === 'tips' && (
+        <TipsScreen
+          onOpenProfile={() => setActiveTab('profile')}
+          profileName={profile.fullName}
+        />
+      )}
+
+      {activeTab === 'profile' && (
+        <ProfileScreen
+          profile={profile}
+          onChange={setProfile}
+          onSave={() => Alert.alert('Perfil', 'Perfil guardado correctamente.')}
+        />
+      )}
 
       <BottomTabs activeTab={activeTab} onPress={setActiveTab} />
 
