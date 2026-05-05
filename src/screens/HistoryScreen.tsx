@@ -70,7 +70,7 @@ export function HistoryScreen({
                 {backgroundColor: item.taken ? COLORS.green : COLORS.red},
               ]}>
               <Text style={appStyles.statusPillText}>
-                {item.taken ? 'Tomada' : 'Omitida'}
+                {item.taken ? '✓ Tomada' : '⚠ Omitida'}
               </Text>
             </View>
           </View>

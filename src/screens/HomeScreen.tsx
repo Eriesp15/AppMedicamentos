@@ -33,7 +33,7 @@ export function HomeScreen({
         <ProfileAvatarButton fullName={profileName} onPress={onOpenProfile} />
       </View>
       <View>
-        <Text style={appStyles.softText}>Hola, Maria</Text>
+        <Text style={appStyles.softText}>Hola, {profileName || 'Maria'} 👋</Text>
       </View>
 
       <View style={appStyles.summaryCard}>
@@ -58,8 +58,8 @@ export function HomeScreen({
         medicines.map(item => (
           <View key={item.id} style={appStyles.medicineCard}>
             <View style={appStyles.rowBetween}>
-              <Text style={appStyles.medicineName}>{item.name}</Text>
-              <Text style={appStyles.softText}>{item.startTime}</Text>
+              <Text style={appStyles.medicineName}>💊 {item.name}</Text>
+              <Text style={appStyles.softText}>🕒 {item.startTime}</Text>
             </View>
             <Text style={appStyles.softText}>
               {item.dosage} - {FREQUENCIES.find(f => f.id === item.frequency)?.label}
@@ -69,12 +69,12 @@ export function HomeScreen({
               <TouchableOpacity
                 style={[appStyles.actionButton, appStyles.actionPrimary]}
                 onPress={() => onMarkTaken(item)}>
-                <Text style={appStyles.actionButtonText}>Marcar tomado</Text>
+                <Text style={appStyles.actionButtonText}>✓ Marcar tomado</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[appStyles.actionButton, appStyles.actionDanger]}
                 onPress={() => onMarkMissed(item)}>
-                <Text style={appStyles.actionButtonText}>No tomada</Text>
+                <Text style={appStyles.actionButtonText}>⚠ No tomada</Text>
               </TouchableOpacity>
             </View>
           </View>

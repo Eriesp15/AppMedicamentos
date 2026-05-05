@@ -42,24 +42,24 @@ export const appStyles = StyleSheet.create({
   },
   softText: {
     color: COLORS.textSoft,
-    fontSize: 14,
+    fontSize: 15,
     marginTop: 4,
   },
   summaryCard: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primaryDark,
     borderRadius: 16,
     padding: 14,
     marginBottom: 16,
   },
   summaryLabel: {
-    color: '#DCE5FF',
-    fontSize: 12,
+    color: '#E8EEFF',
+    fontSize: 13,
     fontWeight: '700',
   },
   summaryText: {
     marginTop: 8,
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
   },
   summaryPercent: {
@@ -71,14 +71,14 @@ export const appStyles = StyleSheet.create({
   },
   progressBar: {
     marginTop: 10,
-    height: 8,
+    height: 10,
     borderRadius: 8,
-    backgroundColor: '#5A76D9',
+    backgroundColor: '#3E5DC7',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#66D990',
+    backgroundColor: COLORS.yellow,
   },
   sectionTitle: {
     color: COLORS.text,
@@ -103,10 +103,12 @@ export const appStyles = StyleSheet.create({
   medicineCard: {
     backgroundColor: COLORS.card,
     borderRadius: 14,
-    borderLeftWidth: 4,
+    borderLeftWidth: 6,
     borderLeftColor: COLORS.orange,
     padding: 14,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E9EEF8',
   },
   medicineName: {
     color: COLORS.text,
@@ -129,7 +131,7 @@ export const appStyles = StyleSheet.create({
   actionButtonText: {
     color: '#FFF',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 15,
   },
   actionPrimary: {
     backgroundColor: COLORS.primary,
@@ -139,7 +141,7 @@ export const appStyles = StyleSheet.create({
   },
   bigButton: {
     marginTop: 8,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.teal,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -151,7 +153,7 @@ export const appStyles = StyleSheet.create({
     fontSize: 15,
   },
   countBadge: {
-    backgroundColor: '#E3EBFF',
+    backgroundColor: '#EAF6FF',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -177,7 +179,7 @@ export const appStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#E9F0FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -229,7 +231,7 @@ export const appStyles = StyleSheet.create({
     right: 0,
     bottom: 0,
     flexDirection: 'row',
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: COLORS.line,
   },
@@ -237,7 +239,7 @@ export const appStyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderTopWidth: 3,
     borderTopColor: 'transparent',
   },
@@ -245,11 +247,11 @@ export const appStyles = StyleSheet.create({
     borderTopColor: COLORS.primary,
   },
   tabIcon: {
-    fontSize: 18,
+    fontSize: 20,
   },
   tabLabel: {
     marginTop: 2,
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.textSoft,
     fontWeight: '600',
   },

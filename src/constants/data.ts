@@ -7,11 +7,11 @@ export const STORAGE_KEYS = {
 };
 
 export const TAB_ITEMS: {id: AppTab; label: string; icon: string}[] = [
-  {id: 'home', label: 'Inicio', icon: '🏠'},
-  {id: 'medicines', label: 'Medicinas', icon: '💊'},
-  {id: 'history', label: 'Historial', icon: '📋'},
-  {id: 'tips', label: 'Consejos', icon: '💡'},
-  {id: 'profile', label: 'Perfil', icon: '👤'},
+  {id: 'home', label: 'Inicio', icon: '⌂'},
+  {id: 'medicines', label: 'Medicinas', icon: '⚕'},
+  {id: 'history', label: 'Historial', icon: '◷'},
+  {id: 'tips', label: 'Consejos', icon: '✦'},
+  {id: 'profile', label: 'Perfil', icon: '◉'},
 ];
 
 export const FREQUENCIES = [

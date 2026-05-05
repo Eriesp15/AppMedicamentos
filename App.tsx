@@ -1,5 +1,6 @@
 import React from 'react';
-import {SafeAreaView, StatusBar} from 'react-native';
+import {StatusBar} from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {BottomTabs} from './src/components/BottomTabs';
 import {MedicineFormModal} from './src/components/MedicineFormModal';
 import {useMedicationManager} from './src/hooks/useMedicationManager';
@@ -38,8 +39,13 @@ function App() {
   } = useMedicationManager();
 
   return (
-    <SafeAreaView style={appStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
+    <SafeAreaProvider>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.bg}
+        translucent={false}
+      />
+      <SafeAreaView edges={['top']} style={appStyles.container}>
 
       {activeTab === 'home' && (
         <HomeScreen
@@ -103,17 +109,18 @@ function App() {
         />
       )}
 
-      <BottomTabs activeTab={activeTab} onPress={setActiveTab} />
+        <BottomTabs activeTab={activeTab} onPress={setActiveTab} />
 
-      <MedicineFormModal
-        visible={showFormModal}
-        editingMedicineId={editingMedicineId}
-        form={form}
-        setForm={setForm}
-        onClose={() => setShowFormModal(false)}
-        onSave={saveMedicine}
-      />
-    </SafeAreaView>
+        <MedicineFormModal
+          visible={showFormModal}
+          editingMedicineId={editingMedicineId}
+          form={form}
+          setForm={setForm}
+          onClose={() => setShowFormModal(false)}
+          onSave={saveMedicine}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
