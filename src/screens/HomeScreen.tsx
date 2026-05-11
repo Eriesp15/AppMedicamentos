@@ -9,6 +9,9 @@ type Props = {
   medicines: Medicine[];
   takenTodayCount: number;
   adherencePercent: number;
+  missedTodayCount: number;
+  pendingTodayCount: number;
+  todayStatusByMedication: Record<string, 'taken' | 'missed'>;
   onMarkTaken: (medicine: Medicine) => void;
   onMarkMissed: (medicine: Medicine) => void;
   onOpenNewForm: () => void;
@@ -20,6 +23,9 @@ export function HomeScreen({
   medicines,
   takenTodayCount,
   adherencePercent,
+  missedTodayCount,
+  pendingTodayCount,
+  todayStatusByMedication,
   onMarkTaken,
   onMarkMissed,
   onOpenNewForm,
@@ -47,6 +53,21 @@ export function HomeScreen({
         <Text style={appStyles.summaryPercent}>{adherencePercent}%</Text>
       </View>
 
+      <View style={appStyles.metricsRow}>
+        <View style={[appStyles.metricCard, appStyles.metricCardTaken]}>
+          <Text style={appStyles.metricTitle}>Tomados</Text>
+          <Text style={appStyles.metricValue}>{takenTodayCount}</Text>
+        </View>
+        <View style={[appStyles.metricCard, appStyles.metricCardMissed]}>
+          <Text style={appStyles.metricTitle}>No tomados</Text>
+          <Text style={appStyles.metricValue}>{missedTodayCount}</Text>
+        </View>
+        <View style={[appStyles.metricCard, appStyles.metricCardPending]}>
+          <Text style={appStyles.metricTitle}>Pendientes</Text>
+          <Text style={appStyles.metricValue}>{pendingTodayCount}</Text>
+        </View>
+      </View>
+
       <Text style={appStyles.sectionTitle}>Medicamentos de hoy</Text>
 
       {medicines.length === 0 ? (
@@ -64,6 +85,15 @@ export function HomeScreen({
             <Text style={appStyles.softText}>
               {item.dosage} - {FREQUENCIES.find(f => f.id === item.frequency)?.label}
             </Text>
+            {todayStatusByMedication[item.id] ? (
+              <View style={appStyles.loggedTodayTag}>
+                <Text style={appStyles.loggedTodayTagText}>
+                  {todayStatusByMedication[item.id] === 'taken'
+                    ? '✓ Ya marcado como tomado'
+                    : '⚠ Marcado como no tomado'}
+                </Text>
+              </View>
+            ) : null}
 
             <View style={appStyles.actionRow}>
               <TouchableOpacity

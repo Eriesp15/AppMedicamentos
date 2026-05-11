@@ -30,6 +30,9 @@ function App() {
     takenTodayCount,
     adherencePercent,
     selectedDateActivities,
+    todayStatusByMedication,
+    missedTodayCount,
+    pendingTodayCount,
     openNewForm,
     openEditForm,
     saveMedicine,
@@ -52,6 +55,9 @@ function App() {
           medicines={medicines}
           takenTodayCount={takenTodayCount}
           adherencePercent={adherencePercent}
+          missedTodayCount={missedTodayCount}
+          pendingTodayCount={pendingTodayCount}
+          todayStatusByMedication={todayStatusByMedication}
           onMarkTaken={markTaken}
           onMarkMissed={markMissed}
           onOpenNewForm={openNewForm}

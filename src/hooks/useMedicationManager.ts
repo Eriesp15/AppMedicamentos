@@ -78,6 +78,26 @@ export function useMedicationManager() {
     return activity.filter(item => new Date(item.date).toDateString() === key);
   }, [activity, selectedHistoryDate]);
 
+  const todayStatusByMedication = useMemo(() => {
+    const statusMap: Record<string, 'taken' | 'missed'> = {};
+    todayActivity.forEach(item => {
+      statusMap[item.medicationId] = item.taken ? 'taken' : 'missed';
+    });
+    return statusMap;
+  }, [todayActivity]);
+
+  const missedTodayCount = useMemo(
+    () => todayActivity.filter(item => !item.taken).length,
+    [todayActivity],
+  );
+
+  const pendingTodayCount = useMemo(() => {
+    if (!medicines.length) {
+      return 0;
+    }
+    return medicines.filter(item => !todayStatusByMedication[item.id]).length;
+  }, [medicines, todayStatusByMedication]);
+
   const openNewForm = () => {
     setEditingMedicineId(null);
     setForm(EMPTY_MEDICINE_FORM);
@@ -140,6 +160,11 @@ export function useMedicationManager() {
   };
 
   const markTaken = (medicine: Medicine) => {
+    if (todayStatusByMedication[medicine.id]) {
+      Alert.alert('Ya registrado', 'Este medicamento ya fue marcado hoy.');
+      return;
+    }
+
     const item: ActivityItem = {
       id: `${medicine.id}_${Date.now()}`,
       medicationId: medicine.id,
@@ -153,6 +178,11 @@ export function useMedicationManager() {
   };
 
   const markMissed = (medicine: Medicine) => {
+    if (todayStatusByMedication[medicine.id]) {
+      Alert.alert('Ya registrado', 'Este medicamento ya fue marcado hoy.');
+      return;
+    }
+
     const item: ActivityItem = {
       id: `${medicine.id}_${Date.now()}`,
       medicationId: medicine.id,
@@ -182,6 +212,9 @@ export function useMedicationManager() {
     takenTodayCount,
     adherencePercent,
     selectedDateActivities,
+    todayStatusByMedication,
+    missedTodayCount,
+    pendingTodayCount,
     openNewForm,
     openEditForm,
     saveMedicine,

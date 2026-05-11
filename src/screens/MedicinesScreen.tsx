@@ -46,12 +46,13 @@ export function MedicinesScreen({
       ) : (
         medicines.map(item => (
           <View key={item.id} style={appStyles.medicineCard}>
-            <Text style={appStyles.medicineName}>{item.name}</Text>
-            <Text style={appStyles.softText}>Dosis: {item.dosage}</Text>
+            <Text style={appStyles.medicineName}>⚕ {item.name}</Text>
+            <Text style={appStyles.softText}>💊 Dosis: {item.dosage}</Text>
             <Text style={appStyles.softText}>
-              Frecuencia: {FREQUENCIES.find(f => f.id === item.frequency)?.label}
+              🔁 Frecuencia: {FREQUENCIES.find(f => f.id === item.frequency)?.label}
             </Text>
-            <Text style={appStyles.softText}>Hora: {item.startTime}</Text>
+            <Text style={appStyles.softText}>🕒 Hora: {item.startTime}</Text>
+            {item.notes ? <Text style={appStyles.softText}>📝 {item.notes}</Text> : null}
 
             <View style={appStyles.actionRow}>
               <TouchableOpacity

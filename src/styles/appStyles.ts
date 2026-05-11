@@ -69,6 +69,41 @@ export const appStyles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'right',
   },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  metricCard: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+  },
+  metricCardTaken: {
+    backgroundColor: '#EAF8F1',
+    borderColor: '#C2EED7',
+  },
+  metricCardMissed: {
+    backgroundColor: '#FDECEC',
+    borderColor: '#F5C2C2',
+  },
+  metricCardPending: {
+    backgroundColor: '#FFF7E6',
+    borderColor: '#FFE0A8',
+  },
+  metricTitle: {
+    color: COLORS.textSoft,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  metricValue: {
+    marginTop: 4,
+    color: COLORS.text,
+    fontSize: 24,
+    fontWeight: '800',
+  },
   progressBar: {
     marginTop: 10,
     height: 10,
@@ -120,6 +155,18 @@ export const appStyles = StyleSheet.create({
     marginTop: 12,
     flexDirection: 'row',
     gap: 8,
+  },
+  loggedTodayTag: {
+    marginTop: 10,
+    borderRadius: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    backgroundColor: '#EFF3FA',
+  },
+  loggedTodayTagText: {
+    color: COLORS.primaryDark,
+    fontSize: 13,
+    fontWeight: '700',
   },
   actionButton: {
     flex: 1,
