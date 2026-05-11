@@ -1,7 +1,7 @@
 import React from 'react';
 import {Modal, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {FREQUENCIES} from '../constants/data';
-import {appStyles} from '../styles/appStyles';
+import {useAppSettings} from '../context/AppSettingsContext';
 import {MedicineForm} from '../types/medication';
 
 type Props = {
@@ -21,6 +21,7 @@ export function MedicineFormModal({
   onClose,
   onSave,
 }: Props) {
+  const {styles: appStyles} = useAppSettings();
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={appStyles.modalOverlay}>

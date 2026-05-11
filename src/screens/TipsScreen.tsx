@@ -1,20 +1,20 @@
 import React from 'react';
 import {ScrollView, Text, View} from 'react-native';
-import {ProfileAvatarButton} from '../components/ProfileAvatarButton';
+import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {useAppSettings} from '../context/AppSettingsContext';
 import {TIPS} from '../constants/data';
-import {appStyles} from '../styles/appStyles';
 
 type Props = {
-  onOpenProfile: () => void;
-  profileName: string;
+  onOpenSettings: () => void;
 };
 
-export function TipsScreen({onOpenProfile, profileName}: Props) {
+export function TipsScreen({onOpenSettings}: Props) {
+  const {styles: appStyles} = useAppSettings();
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
       <View style={appStyles.headerRow}>
         <Text style={appStyles.appTitle}>Consejos de Salud</Text>
-        <ProfileAvatarButton fullName={profileName} onPress={onOpenProfile} />
+        <SettingsHeaderButton onPress={onOpenSettings} />
       </View>
       <Text style={appStyles.softText}>Informacion util para un uso responsable.</Text>
       {TIPS.map(tip => (

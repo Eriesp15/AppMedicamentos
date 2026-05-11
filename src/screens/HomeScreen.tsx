@@ -1,8 +1,8 @@
 import React from 'react';
 import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
-import {ProfileAvatarButton} from '../components/ProfileAvatarButton';
+import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES} from '../constants/data';
-import {appStyles} from '../styles/appStyles';
 import {Medicine} from '../types/medication';
 
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
   onMarkTaken: (medicine: Medicine) => void;
   onMarkMissed: (medicine: Medicine) => void;
   onOpenNewForm: () => void;
-  onOpenProfile: () => void;
+  onOpenSettings: () => void;
   profileName: string;
 };
 
@@ -29,14 +29,15 @@ export function HomeScreen({
   onMarkTaken,
   onMarkMissed,
   onOpenNewForm,
-  onOpenProfile,
+  onOpenSettings,
   profileName,
 }: Props) {
+  const {styles: appStyles} = useAppSettings();
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
       <View style={appStyles.headerRow}>
         <Text style={appStyles.appTitle}>MediCare</Text>
-        <ProfileAvatarButton fullName={profileName} onPress={onOpenProfile} />
+        <SettingsHeaderButton onPress={onOpenSettings} />
       </View>
       <View>
         <Text style={appStyles.softText}>Hola, {profileName || 'Maria'} 👋</Text>

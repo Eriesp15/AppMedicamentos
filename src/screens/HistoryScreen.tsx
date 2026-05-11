@@ -1,8 +1,7 @@
 import React from 'react';
 import {Text, TouchableOpacity, View, ScrollView} from 'react-native';
-import {ProfileAvatarButton} from '../components/ProfileAvatarButton';
-import {COLORS} from '../constants/theme';
-import {appStyles} from '../styles/appStyles';
+import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {useAppSettings} from '../context/AppSettingsContext';
 import {ActivityItem} from '../types/medication';
 import {formatDateLabel} from '../utils/date';
 
@@ -11,8 +10,7 @@ type Props = {
   onPreviousDay: () => void;
   onNextDay: () => void;
   activities: ActivityItem[];
-  onOpenProfile: () => void;
-  profileName: string;
+  onOpenSettings: () => void;
 };
 
 export function HistoryScreen({
@@ -20,14 +18,14 @@ export function HistoryScreen({
   onPreviousDay,
   onNextDay,
   activities,
-  onOpenProfile,
-  profileName,
+  onOpenSettings,
 }: Props) {
+  const {styles: appStyles, palette} = useAppSettings();
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
       <View style={appStyles.headerRow}>
         <Text style={appStyles.appTitle}>Mi Historial</Text>
-        <ProfileAvatarButton fullName={profileName} onPress={onOpenProfile} />
+        <SettingsHeaderButton onPress={onOpenSettings} />
       </View>
 
       <View style={appStyles.historyDateNav}>
@@ -67,7 +65,7 @@ export function HistoryScreen({
             <View
               style={[
                 appStyles.statusPill,
-                {backgroundColor: item.taken ? COLORS.green : COLORS.red},
+                {backgroundColor: item.taken ? palette.green : palette.red},
               ]}>
               <Text style={appStyles.statusPillText}>
                 {item.taken ? '✓ Tomada' : '⚠ Omitida'}

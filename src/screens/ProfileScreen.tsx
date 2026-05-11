@@ -1,18 +1,24 @@
 import React from 'react';
 import {ScrollView, Text, TextInput, TouchableOpacity, View} from 'react-native';
-import {appStyles} from '../styles/appStyles';
+import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {useAppSettings} from '../context/AppSettingsContext';
 import {UserProfile} from '../types/medication';
 
 type Props = {
   profile: UserProfile;
   onChange: (value: UserProfile) => void;
   onSave: () => void;
+  onOpenSettings: () => void;
 };
 
-export function ProfileScreen({profile, onChange, onSave}: Props) {
+export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props) {
+  const {styles: appStyles} = useAppSettings();
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <Text style={appStyles.appTitle}>Mi Perfil</Text>
+      <View style={appStyles.headerRow}>
+        <Text style={appStyles.appTitle}>Mi Perfil</Text>
+        <SettingsHeaderButton onPress={onOpenSettings} />
+      </View>
       <Text style={appStyles.softText}>Datos personales y de salud basicos.</Text>
 
       <View style={appStyles.emptyCard}>

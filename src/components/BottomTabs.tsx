@@ -1,7 +1,7 @@
 import React from 'react';
 import {Text, TouchableOpacity, View} from 'react-native';
 import {TAB_ITEMS} from '../constants/data';
-import {appStyles} from '../styles/appStyles';
+import {useAppSettings} from '../context/AppSettingsContext';
 import {AppTab} from '../types/medication';
 
 type Props = {
@@ -10,6 +10,7 @@ type Props = {
 };
 
 export function BottomTabs({activeTab, onPress}: Props) {
+  const {styles: appStyles} = useAppSettings();
   return (
     <View style={appStyles.tabBar}>
       {TAB_ITEMS.map(tab => (

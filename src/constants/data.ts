@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   MEDICINES: '@medicare/medicines',
   ACTIVITY: '@medicare/activity',
   PROFILE: '@medicare/profile',
+  APP_SETTINGS: '@medicare/app_settings',
 };
 
 export const TAB_ITEMS: {id: AppTab; label: string; icon: string}[] = [
