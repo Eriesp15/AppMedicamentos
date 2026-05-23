@@ -25,6 +25,7 @@ export type ThemePalette = {
   tabBarBg: string;
   modalCardBg: string;
   inputBg: string;
+  placeholderText: string;
   cancelButtonBg: string;
   frequencyActiveBg: string;
   navButtonBg: string;
@@ -55,6 +56,7 @@ const LIGHT: ThemePalette = {
   tabBarBg: '#FFFFFF',
   modalCardBg: '#FFFFFF',
   inputBg: '#FFFFFF',
+  placeholderText: '#6B7280',
   cancelButtonBg: '#EEF1F6',
   frequencyActiveBg: '#EAF0FF',
   navButtonBg: '#E9F0FF',
@@ -85,6 +87,7 @@ const DARK: ThemePalette = {
   tabBarBg: '#141A26',
   modalCardBg: '#1A2030',
   inputBg: '#141A26',
+  placeholderText: '#B7C0D4',
   cancelButtonBg: '#2A3142',
   frequencyActiveBg: '#243052',
   navButtonBg: '#243052',
@@ -115,6 +118,7 @@ const HIGH_CONTRAST: ThemePalette = {
   tabBarBg: '#000000',
   modalCardBg: '#0D0D0D',
   inputBg: '#000000',
+  placeholderText: '#F5F5F5',
   cancelButtonBg: '#262626',
   frequencyActiveBg: '#333300',
   navButtonBg: '#333300',

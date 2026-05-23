@@ -26,6 +26,29 @@ export function createAppStyles(
       justifyContent: 'space-between',
       alignItems: 'center',
     },
+    medicineHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    medicineHeaderInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    medicineTimePill: {
+      flexShrink: 0,
+      borderRadius: 14,
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+      backgroundColor: c.navButtonBg,
+      borderWidth: cardBorder,
+      borderColor: c.line,
+    },
+    medicineTimeText: {
+      color: c.primaryDark,
+      fontSize: fs(13),
+      fontWeight: '800',
+    },
     appTitle: {
       fontSize: fs(28),
       fontWeight: '800',
@@ -312,6 +335,11 @@ export function createAppStyles(
     },
     tabIcon: {
       fontSize: fs(20),
+      color: c.textSoft,
+      fontWeight: '800',
+    },
+    tabIconActive: {
+      color: c.primary,
     },
     tabLabel: {
       marginTop: 2,
@@ -332,6 +360,10 @@ export function createAppStyles(
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
       padding: 16 + tx,
+      maxHeight: '90%',
+    },
+    modalScroll: {
+      flexGrow: 0,
     },
     modalTitle: {
       color: c.text,
@@ -350,11 +382,19 @@ export function createAppStyles(
       borderColor: c.line,
       borderRadius: 10,
       backgroundColor: c.inputBg,
-      marginBottom: 10,
+      marginBottom: 6,
       paddingHorizontal: 12,
       paddingVertical: 10 + tx,
       color: c.text,
       fontSize: fs(16),
+    },
+    charCounter: {
+      color: c.textSoft,
+      fontSize: fs(11),
+      fontWeight: '600',
+      textAlign: 'right',
+      marginTop: -2,
+      marginBottom: 8,
     },
     notesInput: {
       minHeight: 74,
@@ -445,6 +485,86 @@ export function createAppStyles(
     settingsChipTextActive: {
       color: c.primaryDark,
       fontWeight: '700',
+    },
+    settingsOptionGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 10,
+    },
+    visualOptionCard: {
+      flexGrow: 1,
+      flexBasis: '30%',
+      minWidth: 92,
+      borderWidth: cardBorder,
+      borderColor: c.line,
+      borderRadius: 12,
+      backgroundColor: c.inputBg,
+      padding: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    visualOptionCardActive: {
+      borderColor: c.primary,
+      backgroundColor: c.frequencyActiveBg,
+    },
+    visualOptionTitle: {
+      color: c.text,
+      fontSize: fs(13),
+      fontWeight: '800',
+      marginTop: 6,
+      textAlign: 'center',
+    },
+    visualOptionHint: {
+      color: c.textSoft,
+      fontSize: fs(11),
+      fontWeight: '600',
+      marginTop: 2,
+      textAlign: 'center',
+    },
+    fontPreviewSmall: {
+      color: c.textSoft,
+      fontSize: fs(14),
+      fontWeight: '800',
+    },
+    fontPreviewMedium: {
+      color: c.text,
+      fontSize: fs(20),
+      fontWeight: '800',
+    },
+    fontPreviewLarge: {
+      color: c.primary,
+      fontSize: fs(26),
+      fontWeight: '900',
+    },
+    themePreview: {
+      width: '100%',
+      height: 42,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.line,
+      overflow: 'hidden',
+      flexDirection: 'row',
+    },
+    themePreviewBand: {
+      flex: 1,
+    },
+    soundPreviewIcon: {
+      color: c.primary,
+      fontSize: fs(24),
+      fontWeight: '900',
+    },
+    soundPreviewButton: {
+      marginTop: 8,
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: c.primary,
+    },
+    soundPreviewButtonText: {
+      color: '#FFFFFF',
+      fontSize: fs(12),
+      fontWeight: '800',
     },
     settingsToggleRow: {
       flexDirection: 'row',

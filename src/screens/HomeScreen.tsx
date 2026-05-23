@@ -79,11 +79,20 @@ export function HomeScreen({
       ) : (
         medicines.map(item => (
           <View key={item.id} style={appStyles.medicineCard}>
-            <View style={appStyles.rowBetween}>
-              <Text style={appStyles.medicineName}>💊 {item.name}</Text>
-              <Text style={appStyles.softText}>🕒 {item.startTime}</Text>
+            <View style={appStyles.medicineHeaderRow}>
+              <View style={appStyles.medicineHeaderInfo}>
+                <Text
+                  style={appStyles.medicineName}
+                  numberOfLines={2}
+                  ellipsizeMode="tail">
+                  💊 {item.name}
+                </Text>
+              </View>
+              <View style={appStyles.medicineTimePill}>
+                <Text style={appStyles.medicineTimeText}>🕒 {item.startTime}</Text>
+              </View>
             </View>
-            <Text style={appStyles.softText}>
+            <Text style={appStyles.softText} numberOfLines={2} ellipsizeMode="tail">
               {item.dosage} - {FREQUENCIES.find(f => f.id === item.frequency)?.label}
             </Text>
             {todayStatusByMedication[item.id] ? (

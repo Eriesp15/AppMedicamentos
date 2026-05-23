@@ -1,8 +1,17 @@
 import React from 'react';
-import {Modal, ScrollView, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {
+  Alert,
+  Modal,
+  ScrollView,
+  Switch,
+  Text,
+  TouchableOpacity,
+  Vibration,
+  View,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAppSettings} from '../context/AppSettingsContext';
-import {AlarmSoundId, AlarmVolume, AppThemeMode, FontSizePreset} from '../types/settings';
+import {AlarmSoundId} from '../types/settings';
 
 type Props = {
   visible: boolean;
@@ -36,8 +45,113 @@ function Chip({
   );
 }
 
+function FontSizeOption({
+  label,
+  hint,
+  preview,
+  selected,
+  onPress,
+}: {
+  label: string;
+  hint: string;
+  preview: 'small' | 'medium' | 'large';
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const {styles} = useAppSettings();
+  const previewStyle =
+    preview === 'small'
+      ? styles.fontPreviewSmall
+      : preview === 'medium'
+        ? styles.fontPreviewMedium
+        : styles.fontPreviewLarge;
+
+  return (
+    <TouchableOpacity
+      style={[styles.visualOptionCard, selected && styles.visualOptionCardActive]}
+      onPress={onPress}
+      activeOpacity={0.85}>
+      <Text style={previewStyle}>Aa</Text>
+      <Text style={styles.visualOptionTitle}>{label}</Text>
+      <Text style={styles.visualOptionHint}>{hint}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function ThemeOption({
+  label,
+  colors,
+  selected,
+  onPress,
+}: {
+  label: string;
+  colors: string[];
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const {styles} = useAppSettings();
+
+  return (
+    <TouchableOpacity
+      style={[styles.visualOptionCard, selected && styles.visualOptionCardActive]}
+      onPress={onPress}
+      activeOpacity={0.85}>
+      <View style={styles.themePreview}>
+        {colors.map(color => (
+          <View
+            key={color}
+            style={[styles.themePreviewBand, {backgroundColor: color}]}
+          />
+        ))}
+      </View>
+      <Text style={styles.visualOptionTitle}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function SoundOption({
+  label,
+  icon,
+  selected,
+  onSelect,
+  onPreview,
+}: {
+  label: string;
+  icon: string;
+  selected: boolean;
+  onSelect: () => void;
+  onPreview: () => void;
+}) {
+  const {styles} = useAppSettings();
+
+  return (
+    <TouchableOpacity
+      style={[styles.visualOptionCard, selected && styles.visualOptionCardActive]}
+      onPress={onSelect}
+      activeOpacity={0.85}>
+      <Text style={styles.soundPreviewIcon}>{icon}</Text>
+      <Text style={styles.visualOptionTitle}>{label}</Text>
+      <TouchableOpacity style={styles.soundPreviewButton} onPress={onPreview}>
+        <Text style={styles.soundPreviewButtonText}>PROBAR</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
 export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
   const {settings, updateSettings, styles} = useAppSettings();
+  const previewSound = (sound: AlarmSoundId) => {
+    const patterns: Record<AlarmSoundId, number[]> = {
+      gentle: [0, 120, 80, 120],
+      default: [0, 220, 100, 220],
+      classic: [0, 140, 70, 140, 70, 320],
+    };
+    Vibration.vibrate(patterns[sound]);
+    Alert.alert(
+      'Vista previa',
+      'La app reproduce una vibracion de muestra. Para sonido real se debe agregar una libreria/audio nativo.',
+    );
+  };
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -68,19 +182,25 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
             <Text style={styles.settingsRowHint}>
               Texto mas grande ayuda a leer sin esfuerzo.
             </Text>
-            <View style={styles.settingsChipRow}>
-              <Chip
+            <View style={styles.settingsOptionGrid}>
+              <FontSizeOption
                 label="Normal"
+                hint="Lectura base"
+                preview="small"
                 selected={settings.fontSize === 'normal'}
                 onPress={() => updateSettings({fontSize: 'normal'})}
               />
-              <Chip
+              <FontSizeOption
                 label="Grande"
+                hint="Mas legible"
+                preview="medium"
                 selected={settings.fontSize === 'large'}
                 onPress={() => updateSettings({fontSize: 'large'})}
               />
-              <Chip
+              <FontSizeOption
                 label="Muy grande"
+                hint="Maxima lectura"
+                preview="large"
                 selected={settings.fontSize === 'xlarge'}
                 onPress={() => updateSettings({fontSize: 'xlarge'})}
               />
@@ -92,19 +212,22 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
             <Text style={styles.settingsRowHint}>
               Alto contraste facilita ver botones y textos.
             </Text>
-            <View style={styles.settingsChipRow}>
-              <Chip
+            <View style={styles.settingsOptionGrid}>
+              <ThemeOption
                 label="Claro"
+                colors={['#F7FAFF', '#FFFFFF', '#2855D9']}
                 selected={settings.theme === 'light'}
                 onPress={() => updateSettings({theme: 'light'})}
               />
-              <Chip
+              <ThemeOption
                 label="Oscuro"
+                colors={['#0F1219', '#1A2030', '#6B8CFF']}
                 selected={settings.theme === 'dark'}
                 onPress={() => updateSettings({theme: 'dark'})}
               />
-              <Chip
+              <ThemeOption
                 label="Alto contraste"
+                colors={['#000000', '#FFFFFF', '#FFFF00']}
                 selected={settings.theme === 'highContrast'}
                 onPress={() => updateSettings({theme: 'highContrast'})}
               />
@@ -171,21 +294,27 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
             <Text style={styles.settingsRowHint}>
               Elige un tono que reconozcas facilmente.
             </Text>
-            <View style={styles.settingsChipRow}>
-              <Chip
+            <View style={styles.settingsOptionGrid}>
+              <SoundOption
                 label="Suave"
+                icon="♪"
                 selected={settings.alarmSound === 'gentle'}
-                onPress={() => updateSettings({alarmSound: 'gentle'})}
+                onSelect={() => updateSettings({alarmSound: 'gentle'})}
+                onPreview={() => previewSound('gentle')}
               />
-              <Chip
+              <SoundOption
                 label="Normal"
+                icon="♫"
                 selected={settings.alarmSound === 'default'}
-                onPress={() => updateSettings({alarmSound: 'default'})}
+                onSelect={() => updateSettings({alarmSound: 'default'})}
+                onPreview={() => previewSound('default')}
               />
-              <Chip
+              <SoundOption
                 label="Clasico"
+                icon="♬"
                 selected={settings.alarmSound === 'classic'}
-                onPress={() => updateSettings({alarmSound: 'classic'})}
+                onSelect={() => updateSettings({alarmSound: 'classic'})}
+                onPreview={() => previewSound('classic')}
               />
             </View>
           </View>
