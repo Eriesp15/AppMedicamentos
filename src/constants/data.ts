@@ -22,6 +22,20 @@ export const FREQUENCIES = [
   {id: 'diaria', label: '1 vez al dia'},
 ];
 
+export const INPUT_LIMITS = {
+  MEDICINE_NAME: 45,
+  MEDICINE_DOSAGE: 40,
+  MEDICINE_TIME: 5,
+  MEDICINE_NOTES: 140,
+  PROFILE_FULL_NAME: 60,
+  PROFILE_AGE: 3,
+  PROFILE_PHONE: 16,
+  PROFILE_EMERGENCY_CONTACT: 70,
+  PROFILE_BLOOD_TYPE: 4,
+  PROFILE_ALLERGIES: 140,
+  PROFILE_CHRONIC_CONDITIONS: 140,
+};
+
 export const EMPTY_MEDICINE_FORM: MedicineForm = {
   name: '',
   dosage: '',

@@ -18,7 +18,13 @@ export function BottomTabs({activeTab, onPress}: Props) {
           key={tab.id}
           style={[appStyles.tabButton, activeTab === tab.id && appStyles.tabButtonActive]}
           onPress={() => onPress(tab.id)}>
-          <Text style={appStyles.tabIcon}>{tab.icon}</Text>
+          <Text
+            style={[
+              appStyles.tabIcon,
+              activeTab === tab.id ? appStyles.tabIconActive : null,
+            ]}>
+            {tab.icon}
+          </Text>
           <Text
             style={[
               appStyles.tabLabel,

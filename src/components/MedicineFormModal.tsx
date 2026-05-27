@@ -1,6 +1,6 @@
 import React from 'react';
-import {Modal, Text, TextInput, TouchableOpacity, View} from 'react-native';
-import {FREQUENCIES} from '../constants/data';
+import {Modal, ScrollView, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {FREQUENCIES, INPUT_LIMITS} from '../constants/data';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {MedicineForm} from '../types/medication';
 
@@ -21,7 +21,7 @@ export function MedicineFormModal({
   onClose,
   onSave,
 }: Props) {
-  const {styles: appStyles} = useAppSettings();
+  const {styles: appStyles, palette} = useAppSettings();
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={appStyles.modalOverlay}>
@@ -30,19 +30,33 @@ export function MedicineFormModal({
             {editingMedicineId ? 'Editar medicamento' : 'Nuevo medicamento'}
           </Text>
 
+          <ScrollView
+            style={appStyles.modalScroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
           <TextInput
             style={appStyles.input}
             placeholder="Nombre"
+            placeholderTextColor={palette.placeholderText}
+            maxLength={INPUT_LIMITS.MEDICINE_NAME}
             value={form.name}
             onChangeText={value => setForm(current => ({...current, name: value}))}
           />
+          <Text style={appStyles.charCounter}>
+            {form.name.length}/{INPUT_LIMITS.MEDICINE_NAME}
+          </Text>
 
           <TextInput
             style={appStyles.input}
             placeholder="Dosis (ej. 1 pastilla)"
+            placeholderTextColor={palette.placeholderText}
+            maxLength={INPUT_LIMITS.MEDICINE_DOSAGE}
             value={form.dosage}
             onChangeText={value => setForm(current => ({...current, dosage: value}))}
           />
+          <Text style={appStyles.charCounter}>
+            {form.dosage.length}/{INPUT_LIMITS.MEDICINE_DOSAGE}
+          </Text>
 
           <Text style={appStyles.inputLabel}>Frecuencia</Text>
           <View style={appStyles.frequencyWrap}>
@@ -68,18 +82,29 @@ export function MedicineFormModal({
           <TextInput
             style={appStyles.input}
             placeholder="Hora (HH:mm)"
+            placeholderTextColor={palette.placeholderText}
+            maxLength={INPUT_LIMITS.MEDICINE_TIME}
+            keyboardType="numbers-and-punctuation"
             value={form.startTime}
             onChangeText={value => setForm(current => ({...current, startTime: value}))}
           />
+          <Text style={appStyles.charCounter}>
+            {form.startTime.length}/{INPUT_LIMITS.MEDICINE_TIME}
+          </Text>
 
           <TextInput
             style={[appStyles.input, appStyles.notesInput]}
             placeholder="Notas (opcional)"
+            placeholderTextColor={palette.placeholderText}
+            maxLength={INPUT_LIMITS.MEDICINE_NOTES}
             multiline
             numberOfLines={3}
             value={form.notes}
             onChangeText={value => setForm(current => ({...current, notes: value}))}
           />
+          <Text style={appStyles.charCounter}>
+            {form.notes.length}/{INPUT_LIMITS.MEDICINE_NOTES}
+          </Text>
 
           <View style={appStyles.actionRow}>
             <TouchableOpacity
@@ -93,6 +118,7 @@ export function MedicineFormModal({
               <Text style={appStyles.actionButtonText}>Guardar</Text>
             </TouchableOpacity>
           </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
