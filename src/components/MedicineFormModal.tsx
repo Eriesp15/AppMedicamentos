@@ -30,6 +30,10 @@ export function MedicineFormModal({
             {editingMedicineId ? 'Editar medicamento' : 'Nuevo medicamento'}
           </Text>
 
+          <Text style={appStyles.inputLabel}>
+            Nombre
+          </Text>
+
           <ScrollView
             style={appStyles.modalScroll}
             keyboardShouldPersistTaps="handled"
@@ -44,6 +48,10 @@ export function MedicineFormModal({
           />
           <Text style={appStyles.charCounter}>
             {form.name.length}/{INPUT_LIMITS.MEDICINE_NAME}
+          </Text>
+
+          <Text style={appStyles.inputLabel}>
+            Dosis ( Ej: 1 pastilla, 5 ml, etc. )
           </Text>
 
           <TextInput
@@ -79,6 +87,10 @@ export function MedicineFormModal({
             ))}
           </View>
 
+          <Text style={appStyles.inputLabel}>
+            Hora de Inicio (ej. 08:00)
+          </Text>
+
           <TextInput
             style={appStyles.input}
             placeholder="Hora (HH:mm)"
@@ -90,6 +102,10 @@ export function MedicineFormModal({
           />
           <Text style={appStyles.charCounter}>
             {form.startTime.length}/{INPUT_LIMITS.MEDICINE_TIME}
+          </Text>
+
+          <Text style={appStyles.inputLabel}>
+            Notas (opcional)
           </Text>
 
           <TextInput

@@ -41,7 +41,7 @@ const LIGHT: ThemePalette = {
   red: '#D93D3D',
   yellow: '#FFCD4D',
   teal: '#00A7A0',
-  text: '#182033',
+  text: '#000000',
   textSoft: '#5E6A80',
   line: '#DCE4F2',
   summaryMuted: '#E8EEFF',
