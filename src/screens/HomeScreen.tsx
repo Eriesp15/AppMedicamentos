@@ -1,5 +1,16 @@
 import React from 'react';
 import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {
+  faBell,
+  faCheckCircle,
+  faClock,
+  faExclamationTriangle,
+  faPills,
+  faStopwatch,
+  faSyringe,
+  faUtensils,
+} from '@fortawesome/free-solid-svg-icons';
+import {AppIcon} from '../components/AppIcon';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES} from '../constants/data';
 import {Medicine} from '../types/medication';
@@ -29,7 +40,7 @@ export function HomeScreen({
   onOpenSettings,
   profileName,
 }: Props) {
-  const {styles: appStyles} = useAppSettings();
+  const {palette, styles: appStyles} = useAppSettings();
   const nextMedicine = medicines.find(item => !todayStatusByMedication[item.id]);
   const missedMedicines = medicines.filter(
     item => todayStatusByMedication[item.id] === 'missed',
@@ -46,7 +57,10 @@ export function HomeScreen({
       <View style={appStyles.headerRow}>
         <View>
           <Text style={appStyles.softText}>{todayLabel}</Text>
-          <Text style={appStyles.appTitle}>Buenos dias, {profileName || 'Maria'}!</Text>
+          <Text style={appStyles.greetingTitle}>
+            Buenos dias,{'\n'}
+            {profileName || 'Maria'}!
+          </Text>
         </View>
         <TouchableOpacity style={appStyles.avatarButton} onPress={onOpenSettings}>
           <Text style={appStyles.avatarText}>
@@ -60,7 +74,7 @@ export function HomeScreen({
         <View style={appStyles.rowBetween}>
           <Text style={appStyles.sectionEyebrow}>Proxima toma</Text>
           <View style={appStyles.medicineIconBox}>
-            <Text style={appStyles.medicineIconText}>●●</Text>
+            <AppIcon icon={faPills} color={palette.primary} size={28} />
           </View>
         </View>
         {nextMedicine ? (
@@ -72,9 +86,11 @@ export function HomeScreen({
             </Text>
             <View style={appStyles.doseInfoRow}>
               <View style={appStyles.doseInfoBox}>
+                <AppIcon icon={faClock} color={palette.textSoft} size={15} />
                 <Text style={appStyles.doseTime}>{nextMedicine.startTime}</Text>
               </View>
               <View style={appStyles.doseInfoBox}>
+                <AppIcon icon={faUtensils} color={palette.textSoft} size={13} />
                 <Text style={appStyles.doseMeta}>
                   {nextMedicine.foodInstruction || 'Con alimentos'}
                 </Text>
@@ -83,12 +99,18 @@ export function HomeScreen({
             <TouchableOpacity
               style={appStyles.takeButton}
               onPress={() => onMarkTaken(nextMedicine)}>
-              <Text style={appStyles.actionButtonText}>✓ Marcar como tomado</Text>
+              <View style={appStyles.iconTextRow}>
+                <AppIcon icon={faCheckCircle} color="#FFFFFF" size={16} />
+                <Text style={appStyles.actionButtonText}>Marcar como tomado</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity
               style={appStyles.postponeButton}
               onPress={() => onMarkMissed(nextMedicine)}>
-              <Text style={appStyles.postponeButtonText}>Posponer 15 min</Text>
+              <View style={appStyles.iconTextRow}>
+                <AppIcon icon={faStopwatch} color={palette.red} size={15} />
+                <Text style={appStyles.postponeButtonText}>Posponer 15 min</Text>
+              </View>
             </TouchableOpacity>
           </>
         ) : (
@@ -104,8 +126,14 @@ export function HomeScreen({
           {missedMedicines.map(item => (
             <View key={item.id} style={appStyles.missedCard}>
               <View style={appStyles.rowBetween}>
-                <Text style={appStyles.medicineName}>{item.name}</Text>
+                <View style={appStyles.missedTitleRow}>
+                  <View style={appStyles.missedIconCircle}>
+                    <AppIcon icon={faSyringe} color={palette.red} size={17} />
+                  </View>
+                  <Text style={appStyles.medicineName}>{item.name}</Text>
+                </View>
                 <View style={appStyles.missedBadge}>
+                  <AppIcon icon={faExclamationTriangle} color="#FFFFFF" size={10} />
                   <Text style={appStyles.missedBadgeText}>No tomado</Text>
                 </View>
               </View>
@@ -141,7 +169,11 @@ export function HomeScreen({
         pendingMedicines.map(item => (
           <View key={item.id} style={appStyles.simpleMedicineRow}>
             <View style={appStyles.medicineIconBoxSmall}>
-              <Text style={appStyles.medicineIconSmallText}>●●</Text>
+              <AppIcon
+                icon={item.medicineType === 'Inyeccion' ? faSyringe : faPills}
+                color={item.name.toLowerCase().includes('vitamina') ? palette.yellow : palette.primary}
+                size={20}
+              />
             </View>
             <View style={appStyles.medicineHeaderInfo}>
               <Text style={appStyles.medicineName}>{item.name}</Text>
@@ -153,6 +185,7 @@ export function HomeScreen({
             <View style={appStyles.homeTimeColumn}>
               <Text style={appStyles.medicineTimeText}>{item.startTime}</Text>
               <View style={appStyles.pendingBadge}>
+                <AppIcon icon={faBell} color={palette.yellow} size={9} />
                 <Text style={appStyles.pendingBadgeText}>Pendiente</Text>
               </View>
             </View>

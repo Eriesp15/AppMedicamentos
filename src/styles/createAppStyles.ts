@@ -13,10 +13,10 @@ export function createAppStyles(
   const font = 'Outfit-Bold';
   const shadow = {
     shadowColor: '#162033',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: {width: 0, height: 7},
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 3,
   };
 
   return StyleSheet.create({
@@ -62,6 +62,13 @@ export function createAppStyles(
       fontSize: fs(27),
       fontWeight: 'normal',
       color: c.primary,
+    },
+    greetingTitle: {
+      fontFamily: font,
+      fontSize: fs(24),
+      fontWeight: 'normal',
+      color: c.text,
+      lineHeight: fs(25),
     },
     headerRow: {
       flexDirection: 'row',
@@ -269,6 +276,17 @@ export function createAppStyles(
       fontWeight: 'normal',
       fontSize: fs(15),
     },
+    iconTextRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    inlineIconText: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     actionPrimary: {
       backgroundColor: c.primary,
     },
@@ -327,15 +345,15 @@ export function createAppStyles(
       fontSize: fs(15),
     },
     countBadge: {
-      backgroundColor: c.frequencyActiveBg,
+      backgroundColor: '#FFF1DD',
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 8 + tx,
     },
     countBadgeText: {
       fontFamily: font,
-      color: c.primaryDark,
-      fontSize: fs(13),
+      color: c.orange,
+      fontSize: fs(11),
       fontWeight: 'normal',
     },
     historyDateNav: {
@@ -432,10 +450,10 @@ export function createAppStyles(
       marginTop: -20,
     },
     tabIcon: {
-      fontFamily: font,
-      fontSize: fs(20),
-      color: c.textSoft,
-      fontWeight: 'normal',
+      width: 24,
+      height: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     tabIconActive: {
       color: c.primary,
@@ -445,12 +463,9 @@ export function createAppStyles(
       height: 52,
       borderRadius: 26,
       backgroundColor: c.primary,
-      color: '#FFFFFF',
-      textAlign: 'center',
-      textAlignVertical: 'center',
       overflow: 'hidden',
-      fontSize: fs(26),
-      lineHeight: fs(52),
+      alignItems: 'center',
+      justifyContent: 'center',
       ...shadow,
     },
     tabLabel: {
@@ -729,7 +744,7 @@ export function createAppStyles(
     },
     nextDoseCard: {
       backgroundColor: c.card,
-      borderRadius: 16,
+      borderRadius: 22,
       padding: 16 + tx,
       marginTop: 16,
       marginBottom: 16,
@@ -741,7 +756,7 @@ export function createAppStyles(
       width: 52,
       height: 52,
       borderRadius: 14,
-      backgroundColor: c.navButtonBg,
+      backgroundColor: '#EEF5FF',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -755,7 +770,7 @@ export function createAppStyles(
       width: 42,
       height: 42,
       borderRadius: 14,
-      backgroundColor: c.navButtonBg,
+      backgroundColor: '#EEF5FF',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -783,9 +798,9 @@ export function createAppStyles(
       borderRadius: 12,
       backgroundColor: c.inputBg,
       padding: 12 + tx,
-      borderWidth: cardBorder,
-      borderColor: c.line,
+      borderWidth: 0,
       alignItems: 'center',
+      gap: 5,
     },
     doseTime: {
       fontFamily: font,
@@ -802,7 +817,7 @@ export function createAppStyles(
     },
     takeButton: {
       backgroundColor: c.teal,
-      borderRadius: 10,
+      borderRadius: 12,
       paddingVertical: 13 + tx,
       alignItems: 'center',
       justifyContent: 'center',
@@ -810,7 +825,7 @@ export function createAppStyles(
     postponeButton: {
       marginTop: 10,
       backgroundColor: c.metricMissedBg,
-      borderRadius: 10,
+      borderRadius: 12,
       paddingVertical: 12 + tx,
       alignItems: 'center',
       borderWidth: cardBorder,
@@ -831,17 +846,34 @@ export function createAppStyles(
     },
     missedCard: {
       backgroundColor: c.metricMissedBg,
-      borderRadius: 14,
+      borderRadius: 20,
       borderWidth: 2,
       borderColor: c.red,
       padding: 14 + tx,
       marginBottom: 14,
+    },
+    missedTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+    },
+    missedIconCircle: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FFE0E0',
     },
     missedBadge: {
       backgroundColor: c.red,
       borderRadius: 14,
       paddingHorizontal: 10,
       paddingVertical: 5,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
     },
     missedBadgeText: {
       fontFamily: font,
@@ -856,7 +888,7 @@ export function createAppStyles(
     },
     simpleMedicineRow: {
       backgroundColor: c.card,
-      borderRadius: 14,
+      borderRadius: 18,
       borderWidth: 0,
       borderColor: c.line,
       padding: 14 + tx,
@@ -876,6 +908,9 @@ export function createAppStyles(
       borderRadius: 999,
       paddingHorizontal: 8,
       paddingVertical: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
     },
     pendingBadgeText: {
       fontFamily: font,
@@ -884,10 +919,13 @@ export function createAppStyles(
       fontWeight: 'normal',
     },
     activeBadge: {
-      backgroundColor: c.metricTakenBg,
+      backgroundColor: '#E8FAF1',
       borderRadius: 14,
       paddingHorizontal: 10,
       paddingVertical: 5,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
     },
     activeBadgeText: {
       fontFamily: font,

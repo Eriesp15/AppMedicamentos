@@ -1,5 +1,14 @@
 import React from 'react';
 import {Alert, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {
+  faCheck,
+  faEye,
+  faPen,
+  faPills,
+  faSearch,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons';
+import {AppIcon} from '../components/AppIcon';
 import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES} from '../constants/data';
@@ -20,7 +29,7 @@ export function MedicinesScreen({
   onDeleteMedicine,
   onOpenSettings,
 }: Props) {
-  const {styles: appStyles} = useAppSettings();
+  const {palette, styles: appStyles} = useAppSettings();
   const showMedicineDetails = (medicine: Medicine) => {
     Alert.alert(
       medicine.name,
@@ -52,7 +61,10 @@ export function MedicinesScreen({
       </View>
 
       <View style={appStyles.searchBox}>
-        <Text style={appStyles.searchText}>⌕ Buscar medicamento...</Text>
+        <View style={appStyles.inlineIconText}>
+          <AppIcon icon={faSearch} color={palette.textSoft} size={13} />
+          <Text style={appStyles.searchText}>Buscar medicamento...</Text>
+        </View>
       </View>
 
       <View style={appStyles.settingsChipRow}>
@@ -82,6 +94,9 @@ export function MedicinesScreen({
         medicines.map(item => (
           <View key={item.id} style={appStyles.medicineCard}>
             <View style={appStyles.rowBetween}>
+              <View style={appStyles.medicineIconBoxSmall}>
+                <AppIcon icon={faPills} color={palette.teal} size={20} />
+              </View>
               <View style={appStyles.medicineHeaderInfo}>
                 <Text style={appStyles.medicineName} numberOfLines={2}>
                   {item.name}
@@ -91,6 +106,7 @@ export function MedicinesScreen({
                 </Text>
               </View>
               <View style={appStyles.activeBadge}>
+                <AppIcon icon={faCheck} color={palette.green} size={9} />
                 <Text style={appStyles.activeBadgeText}>Activo</Text>
               </View>
             </View>
@@ -114,17 +130,26 @@ export function MedicinesScreen({
               <TouchableOpacity
                 style={[appStyles.actionButton, appStyles.actionViewSoft]}
                 onPress={() => showMedicineDetails(item)}>
-                <Text style={appStyles.viewSoftText}>Ver</Text>
+                <View style={appStyles.iconTextRow}>
+                  <AppIcon icon={faEye} color={palette.primaryDark} size={13} />
+                  <Text style={appStyles.viewSoftText}>Ver</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[appStyles.actionButton, appStyles.actionEditSoft]}
                 onPress={() => onOpenEditForm(item)}>
-                <Text style={appStyles.editSoftText}>Editar</Text>
+                <View style={appStyles.iconTextRow}>
+                  <AppIcon icon={faPen} color={palette.yellow} size={12} />
+                  <Text style={appStyles.editSoftText}>Editar</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[appStyles.actionButton, appStyles.actionDeleteSoft]}
                 onPress={() => onDeleteMedicine(item.id)}>
-                <Text style={appStyles.deleteSoftText}>Eliminar</Text>
+                <View style={appStyles.iconTextRow}>
+                  <AppIcon icon={faTrash} color={palette.red} size={12} />
+                  <Text style={appStyles.deleteSoftText}>Eliminar</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
