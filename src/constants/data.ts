@@ -9,11 +9,24 @@ export const STORAGE_KEYS = {
 
 export const TAB_ITEMS: {id: AppTab; label: string; icon: string}[] = [
   {id: 'home', label: 'Inicio', icon: '⌂'},
-  {id: 'medicines', label: 'Medicinas', icon: '⚕'},
-  {id: 'history', label: 'Historial', icon: '◷'},
-  {id: 'tips', label: 'Consejos', icon: '✦'},
-  {id: 'profile', label: 'Perfil', icon: '◉'},
+  {id: 'medicines', label: 'Medicina', icon: '●●'},
+  {id: 'add', label: 'Agregar', icon: '+'},
+  {id: 'schedules', label: 'Horarios', icon: '□'},
+  {id: 'tracking', label: 'Progreso', icon: '▥'},
 ];
+
+export const MEDICINE_TYPES = [
+  'Pastilla',
+  'Jarabe',
+  'Inyeccion',
+  'Capsula',
+  'Gotas',
+  'Inhalador',
+];
+
+export const MEDICINE_UNITS = ['mg', 'ml', 'g', 'gotas', 'unidades', 'puffs'];
+
+export const FOOD_OPTIONS = ['Con alimentos', 'Sin alimentos'];
 
 export const FREQUENCIES = [
   {id: 'cada8h', label: 'Cada 8 horas'},
@@ -38,9 +51,12 @@ export const INPUT_LIMITS = {
 
 export const EMPTY_MEDICINE_FORM: MedicineForm = {
   name: '',
+  medicineType: MEDICINE_TYPES[0],
+  unit: MEDICINE_UNITS[0],
   dosage: '',
   frequency: FREQUENCIES[0].id,
   startTime: '08:00',
+  foodInstruction: FOOD_OPTIONS[0],
   notes: '',
 };
 

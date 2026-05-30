@@ -107,19 +107,38 @@ export function useMedicationManager() {
     return medicines.filter(item => !todayStatusByMedication[item.id]).length;
   }, [medicines, todayStatusByMedication]);
 
+  const selectTab = (tab: AppTab) => {
+    if (tab === 'add') {
+      setEditingMedicineId(null);
+      setForm(EMPTY_MEDICINE_FORM);
+      setShowFormModal(false);
+    }
+    setActiveTab(tab);
+  };
+
   const openNewForm = () => {
     setEditingMedicineId(null);
     setForm(EMPTY_MEDICINE_FORM);
     setShowFormModal(true);
   };
 
+  const closeForm = () => {
+    setShowFormModal(false);
+    setEditingMedicineId(null);
+    setForm(EMPTY_MEDICINE_FORM);
+  };
+
   const openEditForm = (medicine: Medicine) => {
     setEditingMedicineId(medicine.id);
     setForm({
       name: medicine.name,
+      medicineType: medicine.medicineType || EMPTY_MEDICINE_FORM.medicineType,
+      unit: medicine.unit || EMPTY_MEDICINE_FORM.unit,
       dosage: medicine.dosage,
       frequency: medicine.frequency,
       startTime: medicine.startTime,
+      foodInstruction:
+        medicine.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
       notes: medicine.notes || '',
     });
     setShowFormModal(true);
@@ -152,6 +171,10 @@ export function useMedicationManager() {
 
     setShowFormModal(false);
     setEditingMedicineId(null);
+    if (activeTab === 'add') {
+      setForm(EMPTY_MEDICINE_FORM);
+      setActiveTab('medicines');
+    }
   };
 
   const deleteMedicine = (medicineId: string) => {
@@ -206,7 +229,7 @@ export function useMedicationManager() {
 
   return {
     activeTab,
-    setActiveTab,
+    setActiveTab: selectTab,
     showFormModal,
     setShowFormModal,
     editingMedicineId,
@@ -225,6 +248,7 @@ export function useMedicationManager() {
     missedTodayCount,
     pendingTodayCount,
     openNewForm,
+    closeForm,
     openEditForm,
     saveMedicine,
     deleteMedicine,

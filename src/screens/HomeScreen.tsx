@@ -1,6 +1,5 @@
 import React from 'react';
 import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
-import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES} from '../constants/data';
 import {Medicine} from '../types/medication';
@@ -14,7 +13,6 @@ type Props = {
   todayStatusByMedication: Record<string, 'taken' | 'missed'>;
   onMarkTaken: (medicine: Medicine) => void;
   onMarkMissed: (medicine: Medicine) => void;
-  onOpenNewForm: () => void;
   onOpenSettings: () => void;
   profileName: string;
 };
@@ -28,102 +26,139 @@ export function HomeScreen({
   todayStatusByMedication,
   onMarkTaken,
   onMarkMissed,
-  onOpenNewForm,
   onOpenSettings,
   profileName,
 }: Props) {
   const {styles: appStyles} = useAppSettings();
+  const nextMedicine = medicines.find(item => !todayStatusByMedication[item.id]);
+  const missedMedicines = medicines.filter(
+    item => todayStatusByMedication[item.id] === 'missed',
+  );
+  const pendingMedicines = medicines.filter(item => !todayStatusByMedication[item.id]);
+  const todayLabel = new Intl.DateTimeFormat('es-BO', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
       <View style={appStyles.headerRow}>
-        <Text style={appStyles.appTitle}>MediCare</Text>
-        <SettingsHeaderButton onPress={onOpenSettings} />
-      </View>
-      <View>
-        <Text style={appStyles.softText}>Hola, {profileName || 'Maria'} 👋</Text>
-      </View>
-
-      <View style={appStyles.summaryCard}>
-        <Text style={appStyles.summaryLabel}>RESUMEN DEL DIA</Text>
-        <Text style={appStyles.summaryText}>
-          Hoy tomaste {takenTodayCount} de {medicines.length} medicamentos
-        </Text>
-        <View style={appStyles.progressBar}>
-          <View style={[appStyles.progressFill, {width: `${adherencePercent}%`}]} />
+        <View>
+          <Text style={appStyles.softText}>{todayLabel}</Text>
+          <Text style={appStyles.appTitle}>Buenos dias, {profileName || 'Maria'}!</Text>
         </View>
-        <Text style={appStyles.summaryPercent}>{adherencePercent}%</Text>
+        <TouchableOpacity style={appStyles.avatarButton} onPress={onOpenSettings}>
+          <Text style={appStyles.avatarText}>
+            {(profileName || 'M').trim().charAt(0).toUpperCase()}
+          </Text>
+          <View style={appStyles.onlineDot} />
+        </TouchableOpacity>
       </View>
 
-      <View style={appStyles.metricsRow}>
-        <View style={[appStyles.metricCard, appStyles.metricCardTaken]}>
-          <Text style={appStyles.metricTitle}>Tomados</Text>
-          <Text style={appStyles.metricValue}>{takenTodayCount}</Text>
+      <View style={appStyles.nextDoseCard}>
+        <View style={appStyles.rowBetween}>
+          <Text style={appStyles.sectionEyebrow}>Proxima toma</Text>
+          <View style={appStyles.medicineIconBox}>
+            <Text style={appStyles.medicineIconText}>●●</Text>
+          </View>
         </View>
-        <View style={[appStyles.metricCard, appStyles.metricCardMissed]}>
-          <Text style={appStyles.metricTitle}>No tomados</Text>
-          <Text style={appStyles.metricValue}>{missedTodayCount}</Text>
-        </View>
-        <View style={[appStyles.metricCard, appStyles.metricCardPending]}>
-          <Text style={appStyles.metricTitle}>Pendientes</Text>
-          <Text style={appStyles.metricValue}>{pendingTodayCount}</Text>
-        </View>
-      </View>
-
-      <Text style={appStyles.sectionTitle}>Medicamentos de hoy</Text>
-
-      {medicines.length === 0 ? (
-        <View style={appStyles.emptyCard}>
-          <Text style={appStyles.emptyTitle}>Aun no tienes medicamentos</Text>
-          <Text style={appStyles.softText}>Empieza registrando tu primer medicamento.</Text>
-        </View>
-      ) : (
-        medicines.map(item => (
-          <View key={item.id} style={appStyles.medicineCard}>
-            <View style={appStyles.medicineHeaderRow}>
-              <View style={appStyles.medicineHeaderInfo}>
-                <Text
-                  style={appStyles.medicineName}
-                  numberOfLines={2}
-                  ellipsizeMode="tail">
-                  💊 {item.name}
-                </Text>
+        {nextMedicine ? (
+          <>
+            <Text style={appStyles.heroMedicineName}>{nextMedicine.name}</Text>
+            <Text style={appStyles.softText}>
+              {nextMedicine.dosage} {nextMedicine.unit || ''} -{' '}
+              {nextMedicine.medicineType || 'Medicamento'}
+            </Text>
+            <View style={appStyles.doseInfoRow}>
+              <View style={appStyles.doseInfoBox}>
+                <Text style={appStyles.doseTime}>{nextMedicine.startTime}</Text>
               </View>
-              <View style={appStyles.medicineTimePill}>
-                <Text style={appStyles.medicineTimeText}>🕒 {item.startTime}</Text>
+              <View style={appStyles.doseInfoBox}>
+                <Text style={appStyles.doseMeta}>
+                  {nextMedicine.foodInstruction || 'Con alimentos'}
+                </Text>
               </View>
             </View>
-            <Text style={appStyles.softText} numberOfLines={2} ellipsizeMode="tail">
-              {item.dosage} - {FREQUENCIES.find(f => f.id === item.frequency)?.label}
-            </Text>
-            {todayStatusByMedication[item.id] ? (
-              <View style={appStyles.loggedTodayTag}>
-                <Text style={appStyles.loggedTodayTagText}>
-                  {todayStatusByMedication[item.id] === 'taken'
-                    ? '✓ Ya marcado como tomado'
-                    : '⚠ Marcado como no tomado'}
-                </Text>
-              </View>
-            ) : null}
+            <TouchableOpacity
+              style={appStyles.takeButton}
+              onPress={() => onMarkTaken(nextMedicine)}>
+              <Text style={appStyles.actionButtonText}>✓ Marcar como tomado</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={appStyles.postponeButton}
+              onPress={() => onMarkMissed(nextMedicine)}>
+              <Text style={appStyles.postponeButtonText}>Posponer 15 min</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={appStyles.emptyTitle}>
+            Todas las tomas de hoy estan registradas.
+          </Text>
+        )}
+      </View>
 
-            <View style={appStyles.actionRow}>
-              <TouchableOpacity
-                style={[appStyles.actionButton, appStyles.actionPrimary]}
-                onPress={() => onMarkTaken(item)}>
-                <Text style={appStyles.actionButtonText}>✓ Marcar tomado</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[appStyles.actionButton, appStyles.actionDanger]}
-                onPress={() => onMarkMissed(item)}>
-                <Text style={appStyles.actionButtonText}>⚠ No tomada</Text>
-              </TouchableOpacity>
+      {missedMedicines.length > 0 ? (
+        <>
+          <Text style={appStyles.warningTitle}>Atencion! No tomado</Text>
+          {missedMedicines.map(item => (
+            <View key={item.id} style={appStyles.missedCard}>
+              <View style={appStyles.rowBetween}>
+                <Text style={appStyles.medicineName}>{item.name}</Text>
+                <View style={appStyles.missedBadge}>
+                  <Text style={appStyles.missedBadgeText}>No tomado</Text>
+                </View>
+              </View>
+              <Text style={appStyles.softText}>
+                {item.startTime} - {item.foodInstruction || 'Sin alimentos'}
+              </Text>
+            </View>
+          ))}
+        </>
+      ) : (
+        <View style={appStyles.miniSummaryRow}>
+          <Text style={appStyles.softText}>Tomados: {takenTodayCount}</Text>
+          <Text style={appStyles.softText}>Omitidos: {missedTodayCount}</Text>
+          <Text style={appStyles.softText}>{adherencePercent}%</Text>
+        </View>
+      )}
+
+      <View style={appStyles.rowBetween}>
+        <Text style={appStyles.sectionTitle}>Medicamentos de hoy</Text>
+        <View style={appStyles.countBadge}>
+          <Text style={appStyles.countBadgeText}>{pendingTodayCount} pendientes</Text>
+        </View>
+      </View>
+
+      {pendingMedicines.length === 0 ? (
+        <View style={appStyles.emptyCard}>
+          <Text style={appStyles.emptyTitle}>Sin pendientes por ahora</Text>
+          <Text style={appStyles.softText}>
+            Los medicamentos que quedan por tomar apareceran aqui.
+          </Text>
+        </View>
+      ) : (
+        pendingMedicines.map(item => (
+          <View key={item.id} style={appStyles.simpleMedicineRow}>
+            <View style={appStyles.medicineIconBoxSmall}>
+              <Text style={appStyles.medicineIconSmallText}>●●</Text>
+            </View>
+            <View style={appStyles.medicineHeaderInfo}>
+              <Text style={appStyles.medicineName}>{item.name}</Text>
+              <Text style={appStyles.softText}>
+                {item.dosage} {item.unit || ''} -{' '}
+                {FREQUENCIES.find(f => f.id === item.frequency)?.label}
+              </Text>
+            </View>
+            <View style={appStyles.homeTimeColumn}>
+              <Text style={appStyles.medicineTimeText}>{item.startTime}</Text>
+              <View style={appStyles.pendingBadge}>
+                <Text style={appStyles.pendingBadgeText}>Pendiente</Text>
+              </View>
             </View>
           </View>
         ))
       )}
-
-      <TouchableOpacity style={appStyles.bigButton} onPress={onOpenNewForm}>
-        <Text style={appStyles.bigButtonText}>+ AGREGAR MEDICAMENTO</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }

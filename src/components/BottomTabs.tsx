@@ -16,11 +16,16 @@ export function BottomTabs({activeTab, onPress}: Props) {
       {TAB_ITEMS.map(tab => (
         <TouchableOpacity
           key={tab.id}
-          style={[appStyles.tabButton, activeTab === tab.id && appStyles.tabButtonActive]}
+          style={[
+            appStyles.tabButton,
+            tab.id === 'add' ? appStyles.tabButtonAdd : null,
+            activeTab === tab.id && appStyles.tabButtonActive,
+          ]}
           onPress={() => onPress(tab.id)}>
           <Text
             style={[
               appStyles.tabIcon,
+              tab.id === 'add' ? appStyles.tabIconAdd : null,
               activeTab === tab.id ? appStyles.tabIconActive : null,
             ]}>
             {tab.icon}

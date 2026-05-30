@@ -1,16 +1,16 @@
 import React, {useState} from 'react';
-import {Alert, StatusBar} from 'react-native';
+import {StatusBar} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {BottomTabs} from './src/components/BottomTabs';
 import {MedicineFormModal} from './src/components/MedicineFormModal';
 import {AppSettingsProvider, useAppSettings} from './src/context/AppSettingsContext';
 import {useMedicationManager} from './src/hooks/useMedicationManager';
-import {HistoryScreen} from './src/screens/HistoryScreen';
+import {AddMedicineScreen} from './src/screens/AddMedicineScreen';
 import {HomeScreen} from './src/screens/HomeScreen';
 import {MedicinesScreen} from './src/screens/MedicinesScreen';
-import {ProfileScreen} from './src/screens/ProfileScreen';
+import {SchedulesScreen} from './src/screens/SchedulesScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
-import {TipsScreen} from './src/screens/TipsScreen';
+import {TrackingScreen} from './src/screens/TrackingScreen';
 
 function AppShell() {
   const {styles, statusBarStyle, statusBarBg} = useAppSettings();
@@ -19,22 +19,19 @@ function AppShell() {
     activeTab,
     setActiveTab,
     showFormModal,
-    setShowFormModal,
     editingMedicineId,
-    selectedHistoryDate,
-    setSelectedHistoryDate,
     medicines,
+    activity,
     profile,
-    setProfile,
     form,
     setForm,
     takenTodayCount,
     adherencePercent,
-    selectedDateActivities,
     todayStatusByMedication,
     missedTodayCount,
     pendingTodayCount,
     openNewForm,
+    closeForm,
     openEditForm,
     saveMedicine,
     deleteMedicine,
@@ -46,7 +43,7 @@ function AppShell() {
   const closeSettings = () => setShowSettings(false);
   const openProfileFromSettings = () => {
     closeSettings();
-    setActiveTab('profile');
+    setActiveTab('tracking');
   };
 
   return (
@@ -67,7 +64,6 @@ function AppShell() {
             todayStatusByMedication={todayStatusByMedication}
             onMarkTaken={markTaken}
             onMarkMissed={markMissed}
-            onOpenNewForm={openNewForm}
             onOpenSettings={openSettings}
             profileName={profile.fullName}
           />
@@ -83,37 +79,25 @@ function AppShell() {
           />
         )}
 
-        {activeTab === 'history' && (
-          <HistoryScreen
-            selectedDate={selectedHistoryDate}
-            onPreviousDay={() =>
-              setSelectedHistoryDate(prev => {
-                const next = new Date(prev);
-                next.setDate(prev.getDate() - 1);
-                return next;
-              })
-            }
-            onNextDay={() =>
-              setSelectedHistoryDate(prev => {
-                const next = new Date(prev);
-                next.setDate(prev.getDate() + 1);
-                return next;
-              })
-            }
-            activities={selectedDateActivities}
-            onOpenSettings={openSettings}
+        {activeTab === 'add' && (
+          <AddMedicineScreen
+            form={form}
+            setForm={setForm}
+            onSave={saveMedicine}
           />
         )}
 
-        {activeTab === 'tips' && (
-          <TipsScreen onOpenSettings={openSettings} />
+        {activeTab === 'schedules' && (
+          <SchedulesScreen medicines={medicines} onOpenSettings={openSettings} />
         )}
 
-        {activeTab === 'profile' && (
-          <ProfileScreen
-            profile={profile}
-            onChange={setProfile}
-            onSave={() => Alert.alert('Perfil', 'Perfil guardado correctamente.')}
+        {activeTab === 'tracking' && (
+          <TrackingScreen
+            medicines={medicines}
+            activities={activity}
+            takenTodayCount={takenTodayCount}
+            missedTodayCount={missedTodayCount}
+            adherencePercent={adherencePercent}
             onOpenSettings={openSettings}
           />
         )}
@@ -125,7 +109,7 @@ function AppShell() {
           editingMedicineId={editingMedicineId}
           form={form}
           setForm={setForm}
-          onClose={() => setShowFormModal(false)}
+          onClose={closeForm}
           onSave={saveMedicine}
         />
       </SafeAreaView>

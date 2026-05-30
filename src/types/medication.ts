@@ -1,11 +1,14 @@
-export type AppTab = 'home' | 'medicines' | 'history' | 'tips' | 'profile';
+export type AppTab = 'home' | 'medicines' | 'add' | 'schedules' | 'tracking';
 
 export type Medicine = {
   id: string;
   name: string;
+  medicineType: string;
+  unit: string;
   dosage: string;
   frequency: string;
   startTime: string;
+  foodInstruction: string;
   notes: string;
   createdAt: string;
   active: boolean;
@@ -23,9 +26,12 @@ export type ActivityItem = {
 
 export type MedicineForm = {
   name: string;
+  medicineType: string;
+  unit: string;
   dosage: string;
   frequency: string;
   startTime: string;
+  foodInstruction: string;
   notes: string;
 };
 
