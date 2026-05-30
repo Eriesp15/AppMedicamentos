@@ -25,6 +25,7 @@ export function useMedicationManager() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [form, setForm] = useState<MedicineForm>(EMPTY_MEDICINE_FORM);
+  const [hasLoadedRemoteData, setHasLoadedRemoteData] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,23 +37,31 @@ export function useMedicationManager() {
           setProfile(data.profile);
         }
       } catch {
-        Alert.alert('Error', 'No se pudo cargar la informacion local.');
+        Alert.alert('Error', 'No se pudo cargar la informacion de Firebase.');
+      } finally {
+        setHasLoadedRemoteData(true);
       }
     };
     loadData();
   }, []);
 
   useEffect(() => {
-    persistMedicines(medicines).catch(() => {});
-  }, [medicines]);
+    if (hasLoadedRemoteData) {
+      persistMedicines(medicines).catch(() => {});
+    }
+  }, [hasLoadedRemoteData, medicines]);
 
   useEffect(() => {
-    persistActivity(activity).catch(() => {});
-  }, [activity]);
+    if (hasLoadedRemoteData) {
+      persistActivity(activity).catch(() => {});
+    }
+  }, [activity, hasLoadedRemoteData]);
 
   useEffect(() => {
-    persistProfile(profile).catch(() => {});
-  }, [profile]);
+    if (hasLoadedRemoteData) {
+      persistProfile(profile).catch(() => {});
+    }
+  }, [hasLoadedRemoteData, profile]);
 
   const todayKey = useMemo(() => new Date().toDateString(), []);
 

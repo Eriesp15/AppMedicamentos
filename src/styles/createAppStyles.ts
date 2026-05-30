@@ -373,8 +373,8 @@ export function createAppStyles(
     },
     inputLabel: {
       color: c.text,
-      fontSize: fs(13),
-      fontWeight: '700',
+      fontSize: fs(16),
+      fontWeight: '500',
       marginBottom: 6,
     },
     input: {
