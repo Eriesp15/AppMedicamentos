@@ -1,5 +1,26 @@
 import React from 'react';
-import {Modal, ScrollView, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {
+  Modal,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import {
+  faBell,
+  faCheckCircle,
+  faClipboardList,
+  faClock,
+  faFlask,
+  faMinus,
+  faPlus,
+  faSyringe,
+  faTablets,
+  faTag,
+  faUtensils,
+} from '@fortawesome/free-solid-svg-icons';
+import { AppIcon } from './AppIcon';
 import {
   FOOD_OPTIONS,
   FREQUENCIES,
@@ -7,8 +28,15 @@ import {
   MEDICINE_TYPES,
   MEDICINE_UNITS,
 } from '../constants/data';
-import {useAppSettings} from '../context/AppSettingsContext';
-import {MedicineForm} from '../types/medication';
+import { useAppSettings } from '../context/AppSettingsContext';
+import { MedicineForm } from '../types/medication';
+import {
+  formatTime,
+  getTimeParts,
+  sanitizeDecimal,
+  sanitizeMedicineName,
+  sanitizeNotes,
+} from '../utils/inputSanitizers';
 
 type Props = {
   visible: boolean;
@@ -34,20 +62,47 @@ export function MedicineFormFields({
   onCancel,
   saveLabel = 'Guardar medicamento',
 }: FormFieldsProps) {
-  const {styles: appStyles, palette} = useAppSettings();
+  const { styles: appStyles, palette } = useAppSettings();
+  const timeParts = getTimeParts(form.startTime);
+
+  const updateTime = (hours: number, minutes: number) => {
+    setForm(current => ({ ...current, startTime: formatTime(hours, minutes) }));
+  };
+
+  const adjustTime = (part: 'hours' | 'minutes', amount: number) => {
+    const current = getTimeParts(form.startTime);
+    const nextHours =
+      part === 'hours'
+        ? current.hours + amount
+        : current.hours + Math.floor((current.minutes + amount) / 60);
+    const nextMinutes =
+      part === 'minutes' ? current.minutes + amount : current.minutes;
+
+    updateTime(nextHours, nextMinutes);
+  };
 
   return (
     <>
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>N</Text>
-        <Text style={appStyles.inputLabel}>Nombre del medicamento</Text>
+        <View style={appStyles.formLabelRow}>
+          <View style={appStyles.formIconCircle}>
+            <AppIcon icon={faTag} color={palette.primary} size={20} />
+          </View>
+          <Text style={appStyles.inputLabel}>Nombre del medicamento</Text>
+        </View>
         <TextInput
           style={appStyles.input}
           placeholder="Ej: Metformina"
           placeholderTextColor={palette.placeholderText}
           maxLength={INPUT_LIMITS.MEDICINE_NAME}
           value={form.name}
-          onChangeText={value => setForm(current => ({...current, name: value}))}
+          autoCapitalize="words"
+          onChangeText={value =>
+            setForm(current => ({
+              ...current,
+              name: sanitizeMedicineName(value),
+            }))
+          }
         />
         <Text style={appStyles.charCounter}>
           {form.name.length}/{INPUT_LIMITS.MEDICINE_NAME}
@@ -55,26 +110,36 @@ export function MedicineFormFields({
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>T</Text>
-        <Text style={appStyles.inputLabel}>Tipo de medicamento</Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#FFF0E6' }]}
+          >
+            <AppIcon icon={faTablets} color={palette.orange} size={20} />
+          </View>
+          <Text style={appStyles.inputLabel}>Tipo de medicamento</Text>
+        </View>
         <View style={appStyles.optionGrid}>
           {MEDICINE_TYPES.map(option => (
             <TouchableOpacity
               key={option}
               style={[
                 appStyles.optionChip,
-                form.medicineType === option ? appStyles.optionChipActive : null,
+                form.medicineType === option
+                  ? appStyles.optionChipActive
+                  : null,
               ]}
               onPress={() =>
-                setForm(current => ({...current, medicineType: option}))
-              }>
+                setForm(current => ({ ...current, medicineType: option }))
+              }
+            >
               <Text
                 style={[
                   appStyles.optionChipText,
                   form.medicineType === option
                     ? appStyles.optionChipTextActive
                     : null,
-                ]}>
+                ]}
+              >
                 {option}
               </Text>
             </TouchableOpacity>
@@ -83,8 +148,14 @@ export function MedicineFormFields({
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>U</Text>
-        <Text style={appStyles.inputLabel}>Unidad</Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#E0F5EC' }]}
+          >
+            <AppIcon icon={faFlask} color={palette.teal} size={20} />
+          </View>
+          <Text style={appStyles.inputLabel}>Unidad</Text>
+        </View>
         <View style={appStyles.frequencyWrap}>
           {MEDICINE_UNITS.map(option => (
             <TouchableOpacity
@@ -93,12 +164,16 @@ export function MedicineFormFields({
                 appStyles.frequencyItem,
                 form.unit === option ? appStyles.frequencyItemActive : null,
               ]}
-              onPress={() => setForm(current => ({...current, unit: option}))}>
+              onPress={() => setForm(current => ({ ...current, unit: option }))}
+            >
               <Text
                 style={[
                   appStyles.frequencyItemText,
-                  form.unit === option ? appStyles.frequencyItemTextActive : null,
-                ]}>
+                  form.unit === option
+                    ? appStyles.frequencyItemTextActive
+                    : null,
+                ]}
+              >
                 {option}
               </Text>
             </TouchableOpacity>
@@ -107,16 +182,24 @@ export function MedicineFormFields({
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>D</Text>
-        <Text style={appStyles.inputLabel}>Dosis</Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#FFE8E8' }]}
+          >
+            <AppIcon icon={faSyringe} color={palette.red} size={18} />
+          </View>
+          <Text style={appStyles.inputLabel}>Dosis</Text>
+        </View>
         <TextInput
           style={appStyles.input}
           placeholder="Ej: 500"
           placeholderTextColor={palette.placeholderText}
           maxLength={INPUT_LIMITS.MEDICINE_DOSAGE}
-          keyboardType="numbers-and-punctuation"
+          keyboardType="decimal-pad"
           value={form.dosage}
-          onChangeText={value => setForm(current => ({...current, dosage: value}))}
+          onChangeText={value =>
+            setForm(current => ({ ...current, dosage: sanitizeDecimal(value) }))
+          }
         />
         <Text style={appStyles.charCounter}>
           {form.dosage.length}/{INPUT_LIMITS.MEDICINE_DOSAGE}
@@ -124,24 +207,36 @@ export function MedicineFormFields({
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>F</Text>
-        <Text style={appStyles.inputLabel}>Frecuencia</Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#E8EDF8' }]}
+          >
+            <AppIcon icon={faClock} color={palette.primaryDark} size={20} />
+          </View>
+          <Text style={appStyles.inputLabel}>Frecuencia</Text>
+        </View>
         <View style={appStyles.frequencyWrap}>
           {FREQUENCIES.map(option => (
             <TouchableOpacity
               key={option.id}
               style={[
                 appStyles.frequencyItem,
-                form.frequency === option.id ? appStyles.frequencyItemActive : null,
+                form.frequency === option.id
+                  ? appStyles.frequencyItemActive
+                  : null,
               ]}
-              onPress={() => setForm(current => ({...current, frequency: option.id}))}>
+              onPress={() =>
+                setForm(current => ({ ...current, frequency: option.id }))
+              }
+            >
               <Text
                 style={[
                   appStyles.frequencyItemText,
                   form.frequency === option.id
                     ? appStyles.frequencyItemTextActive
                     : null,
-                ]}>
+                ]}
+              >
                 {option.label}
               </Text>
             </TouchableOpacity>
@@ -150,43 +245,94 @@ export function MedicineFormFields({
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>H</Text>
-        <Text style={appStyles.inputLabel}>Hora de toma</Text>
-        <TextInput
-          style={appStyles.input}
-          placeholder="08:00"
-          placeholderTextColor={palette.placeholderText}
-          maxLength={INPUT_LIMITS.MEDICINE_TIME}
-          keyboardType="numbers-and-punctuation"
-          value={form.startTime}
-          onChangeText={value => setForm(current => ({...current, startTime: value}))}
-        />
-        <Text style={appStyles.charCounter}>
-          {form.startTime.length}/{INPUT_LIMITS.MEDICINE_TIME}
-        </Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#FFF3D8' }]}
+          >
+            <AppIcon icon={faBell} color={palette.yellow} size={20} />
+          </View>
+          <Text style={appStyles.inputLabel}>Hora de toma</Text>
+        </View>
+        <View style={appStyles.timePickerCard}>
+          <View style={appStyles.timeStepper}>
+            <TouchableOpacity
+              style={appStyles.timeStepButton}
+              onPress={() => adjustTime('hours', 1)}
+              accessibilityLabel="Subir hora"
+            >
+              <AppIcon icon={faPlus} color={palette.primary} size={13} />
+            </TouchableOpacity>
+            <Text style={appStyles.timeStepperValue}>
+              {timeParts.hours.toString().padStart(2, '0')}
+            </Text>
+            <TouchableOpacity
+              style={appStyles.timeStepButton}
+              onPress={() => adjustTime('hours', -1)}
+              accessibilityLabel="Bajar hora"
+            >
+              <AppIcon icon={faMinus} color={palette.primary} size={13} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={appStyles.timeSeparator}>:</Text>
+
+          <View style={appStyles.timeStepper}>
+            <TouchableOpacity
+              style={appStyles.timeStepButton}
+              onPress={() => adjustTime('minutes', 5)}
+              accessibilityLabel="Subir minutos"
+            >
+              <AppIcon icon={faPlus} color={palette.primary} size={13} />
+            </TouchableOpacity>
+            <Text style={appStyles.timeStepperValue}>
+              {timeParts.minutes.toString().padStart(2, '0')}
+            </Text>
+            <TouchableOpacity
+              style={appStyles.timeStepButton}
+              onPress={() => adjustTime('minutes', -5)}
+              accessibilityLabel="Bajar minutos"
+            >
+              <AppIcon icon={faMinus} color={palette.primary} size={13} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={appStyles.timeFormatPill}>
+            <Text style={appStyles.timeFormatText}>24 h</Text>
+          </View>
+        </View>
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>A</Text>
-        <Text style={appStyles.inputLabel}>Con o sin alimentos</Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#FFF0E6' }]}
+          >
+            <AppIcon icon={faUtensils} color={palette.orange} size={18} />
+          </View>
+          <Text style={appStyles.inputLabel}>Con o sin alimentos</Text>
+        </View>
         <View style={appStyles.optionGrid}>
           {FOOD_OPTIONS.map(option => (
             <TouchableOpacity
               key={option}
               style={[
                 appStyles.optionChip,
-                form.foodInstruction === option ? appStyles.optionChipActive : null,
+                form.foodInstruction === option
+                  ? appStyles.optionChipActive
+                  : null,
               ]}
               onPress={() =>
-                setForm(current => ({...current, foodInstruction: option}))
-              }>
+                setForm(current => ({ ...current, foodInstruction: option }))
+              }
+            >
               <Text
                 style={[
                   appStyles.optionChipText,
                   form.foodInstruction === option
                     ? appStyles.optionChipTextActive
                     : null,
-                ]}>
+                ]}
+              >
                 {option}
               </Text>
             </TouchableOpacity>
@@ -195,8 +341,18 @@ export function MedicineFormFields({
       </View>
 
       <View style={appStyles.fieldCard}>
-        <Text style={appStyles.formSectionIcon}>N</Text>
-        <Text style={appStyles.inputLabel}>Notas adicionales</Text>
+        <View style={appStyles.formLabelRow}>
+          <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#F0F0F5' }]}
+          >
+            <AppIcon
+              icon={faClipboardList}
+              color={palette.textSoft}
+              size={18}
+            />
+          </View>
+          <Text style={appStyles.inputLabel}>Notas adicionales</Text>
+        </View>
         <TextInput
           style={[appStyles.input, appStyles.notesInput]}
           placeholder="Ej: Tomar con agua fria, evitar lacteos..."
@@ -205,7 +361,9 @@ export function MedicineFormFields({
           multiline
           numberOfLines={3}
           value={form.notes}
-          onChangeText={value => setForm(current => ({...current, notes: value}))}
+          onChangeText={value =>
+            setForm(current => ({ ...current, notes: sanitizeNotes(value) }))
+          }
         />
         <Text style={appStyles.charCounter}>
           {form.notes.length}/{INPUT_LIMITS.MEDICINE_NOTES}
@@ -216,14 +374,19 @@ export function MedicineFormFields({
         {onCancel ? (
           <TouchableOpacity
             style={[appStyles.actionButton, appStyles.cancelButton]}
-            onPress={onCancel}>
+            onPress={onCancel}
+          >
             <Text style={appStyles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
         ) : null}
         <TouchableOpacity
           style={[appStyles.actionButton, appStyles.actionPrimary]}
-          onPress={onSave}>
-          <Text style={appStyles.actionButtonText}>{saveLabel}</Text>
+          onPress={onSave}
+        >
+          <View style={appStyles.iconTextRow}>
+            <AppIcon icon={faCheckCircle} color="#FFFFFF" size={16} />
+            <Text style={appStyles.actionButtonText}>{saveLabel}</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </>
@@ -238,7 +401,7 @@ export function MedicineFormModal({
   onClose,
   onSave,
 }: Props) {
-  const {styles: appStyles} = useAppSettings();
+  const { styles: appStyles } = useAppSettings();
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={appStyles.modalOverlay}>
@@ -250,7 +413,8 @@ export function MedicineFormModal({
           <ScrollView
             style={appStyles.modalScroll}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+          >
             <MedicineFormFields
               form={form}
               setForm={setForm}

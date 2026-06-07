@@ -1,9 +1,23 @@
 import React from 'react';
-import {ScrollView, Text, TextInput, TouchableOpacity, View} from 'react-native';
-import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
-import {INPUT_LIMITS} from '../constants/data';
-import {useAppSettings} from '../context/AppSettingsContext';
-import {UserProfile} from '../types/medication';
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SettingsHeaderButton } from '../components/SettingsHeaderButton';
+import { INPUT_LIMITS } from '../constants/data';
+import { useAppSettings } from '../context/AppSettingsContext';
+import { UserProfile } from '../types/medication';
+import {
+  sanitizeBloodType,
+  sanitizeDigits,
+  sanitizeMedicineName,
+  sanitizeNotes,
+  sanitizePersonName,
+  sanitizePhone,
+} from '../utils/inputSanitizers';
 
 type Props = {
   profile: UserProfile;
@@ -12,15 +26,22 @@ type Props = {
   onOpenSettings: () => void;
 };
 
-export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props) {
-  const {styles: appStyles, palette} = useAppSettings();
+export function ProfileScreen({
+  profile,
+  onChange,
+  onSave,
+  onOpenSettings,
+}: Props) {
+  const { styles: appStyles, palette } = useAppSettings();
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
       <View style={appStyles.headerRow}>
         <Text style={appStyles.appTitle}>Mi Perfil</Text>
         <SettingsHeaderButton onPress={onOpenSettings} />
       </View>
-      <Text style={appStyles.softText}>Datos personales y de salud basicos.</Text>
+      <Text style={appStyles.softText}>
+        Datos personales y de salud basicos.
+      </Text>
 
       <View style={appStyles.emptyCard}>
         <Text style={appStyles.inputLabel}>Nombre completo</Text>
@@ -28,7 +49,10 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={appStyles.input}
           value={profile.fullName}
           maxLength={INPUT_LIMITS.PROFILE_FULL_NAME}
-          onChangeText={value => onChange({...profile, fullName: value})}
+          autoCapitalize="words"
+          onChangeText={value =>
+            onChange({ ...profile, fullName: sanitizePersonName(value) })
+          }
           placeholder="Ej: Maria Perez"
           placeholderTextColor={palette.placeholderText}
         />
@@ -38,7 +62,12 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={appStyles.input}
           value={profile.age}
           maxLength={INPUT_LIMITS.PROFILE_AGE}
-          onChangeText={value => onChange({...profile, age: value})}
+          onChangeText={value =>
+            onChange({
+              ...profile,
+              age: sanitizeDigits(value, INPUT_LIMITS.PROFILE_AGE),
+            })
+          }
           keyboardType="numeric"
           placeholder="Ej: 68"
           placeholderTextColor={palette.placeholderText}
@@ -49,7 +78,9 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={appStyles.input}
           value={profile.phone}
           maxLength={INPUT_LIMITS.PROFILE_PHONE}
-          onChangeText={value => onChange({...profile, phone: value})}
+          onChangeText={value =>
+            onChange({ ...profile, phone: sanitizePhone(value) })
+          }
           keyboardType="phone-pad"
           placeholder="Ej: 70000000"
           placeholderTextColor={palette.placeholderText}
@@ -60,7 +91,12 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={appStyles.input}
           value={profile.emergencyContact}
           maxLength={INPUT_LIMITS.PROFILE_EMERGENCY_CONTACT}
-          onChangeText={value => onChange({...profile, emergencyContact: value})}
+          onChangeText={value =>
+            onChange({
+              ...profile,
+              emergencyContact: sanitizeMedicineName(value),
+            })
+          }
           placeholder="Nombre y telefono"
           placeholderTextColor={palette.placeholderText}
         />
@@ -70,7 +106,10 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={appStyles.input}
           value={profile.bloodType}
           maxLength={INPUT_LIMITS.PROFILE_BLOOD_TYPE}
-          onChangeText={value => onChange({...profile, bloodType: value})}
+          autoCapitalize="characters"
+          onChangeText={value =>
+            onChange({ ...profile, bloodType: sanitizeBloodType(value) })
+          }
           placeholder="Ej: O+"
           placeholderTextColor={palette.placeholderText}
         />
@@ -80,7 +119,9 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={[appStyles.input, appStyles.notesInput]}
           value={profile.allergies}
           maxLength={INPUT_LIMITS.PROFILE_ALLERGIES}
-          onChangeText={value => onChange({...profile, allergies: value})}
+          onChangeText={value =>
+            onChange({ ...profile, allergies: sanitizeNotes(value) })
+          }
           placeholder="Alergias a medicamentos o alimentos"
           placeholderTextColor={palette.placeholderText}
           multiline
@@ -91,7 +132,9 @@ export function ProfileScreen({profile, onChange, onSave, onOpenSettings}: Props
           style={[appStyles.input, appStyles.notesInput]}
           value={profile.chronicConditions}
           maxLength={INPUT_LIMITS.PROFILE_CHRONIC_CONDITIONS}
-          onChangeText={value => onChange({...profile, chronicConditions: value})}
+          onChangeText={value =>
+            onChange({ ...profile, chronicConditions: sanitizeNotes(value) })
+          }
           placeholder="Ej: diabetes, hipertension"
           placeholderTextColor={palette.placeholderText}
           multiline

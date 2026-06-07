@@ -1,5 +1,5 @@
-import {StyleSheet} from 'react-native';
-import {ThemePalette} from '../constants/themePalettes';
+import { StyleSheet } from 'react-native';
+import { ThemePalette } from '../constants/themePalettes';
 
 export function createAppStyles(
   c: ThemePalette,
@@ -13,7 +13,7 @@ export function createAppStyles(
   const font = 'Outfit-Bold';
   const shadow = {
     shadowColor: '#162033',
-    shadowOffset: {width: 0, height: 7},
+    shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.07,
     shadowRadius: 14,
     elevation: 3,
@@ -1140,18 +1140,73 @@ export function createAppStyles(
       borderWidth: 0,
       ...shadow,
     },
-    formSectionIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 8,
+    formLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 10,
+    },
+    formIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    timePickerCard: {
+      borderWidth: cardBorder,
+      borderColor: c.line,
+      borderRadius: 14,
+      backgroundColor: c.inputBg,
+      paddingHorizontal: 12,
+      paddingVertical: 12 + tx,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    timeStepper: {
+      alignItems: 'center',
+      gap: 7,
+      minWidth: 76,
+    },
+    timeStepButton: {
+      width: 34 + (largeTouch ? 8 : 0),
+      height: 30 + (largeTouch ? 8 : 0),
+      borderRadius: 10,
       backgroundColor: c.navButtonBg,
-      color: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: highVisibilityBorders ? 2 : 0,
+      borderColor: c.primary,
+    },
+    timeStepperValue: {
       fontFamily: font,
-      fontSize: fs(15),
+      color: c.text,
+      fontSize: fs(28),
       fontWeight: 'normal',
+      minWidth: 48,
       textAlign: 'center',
-      textAlignVertical: 'center',
-      marginBottom: 8,
+    },
+    timeSeparator: {
+      fontFamily: font,
+      color: c.text,
+      fontSize: fs(28),
+      fontWeight: 'normal',
+      marginTop: 2,
+    },
+    timeFormatPill: {
+      alignSelf: 'center',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 6 + tx,
+      backgroundColor: '#FFF3D8',
+    },
+    timeFormatText: {
+      fontFamily: font,
+      color: c.yellow,
+      fontSize: fs(12),
+      fontWeight: 'normal',
     },
   });
 }
