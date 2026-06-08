@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { DEFAULT_PROFILE, EMPTY_MEDICINE_FORM } from '../constants/data';
+import { useAppSettings } from '../context/AppSettingsContext';
+import {
+  cancelMedicineAlarms,
+  scheduleAllMedicineAlarms,
+} from '../services/alarmService';
 import {
   ActivityItem,
+  AlarmSoundId,
   AppTab,
   Medicine,
   MedicineForm,
+  SnoozeMinutes,
   UserProfile,
 } from '../types/medication';
 import {
@@ -22,6 +29,7 @@ import {
 } from '../utils/inputSanitizers';
 
 export function useMedicationManager() {
+  const { settings } = useAppSettings();
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingMedicineId, setEditingMedicineId] = useState<string | null>(
@@ -70,6 +78,12 @@ export function useMedicationManager() {
       persistProfile(profile).catch(() => {});
     }
   }, [hasLoadedRemoteData, profile]);
+
+  useEffect(() => {
+    if (hasLoadedRemoteData) {
+      scheduleAllMedicineAlarms(medicines, settings).catch(() => {});
+    }
+  }, [hasLoadedRemoteData, medicines, settings]);
 
   const todayKey = useMemo(() => new Date().toDateString(), []);
 
@@ -149,6 +163,13 @@ export function useMedicationManager() {
       foodInstruction:
         medicine.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
       notes: medicine.notes || '',
+      alarmEnabled:
+        typeof medicine.alarmEnabled === 'boolean'
+          ? medicine.alarmEnabled
+          : EMPTY_MEDICINE_FORM.alarmEnabled,
+      alarmSound: medicine.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
+      snoozeMinutes:
+        medicine.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
     });
     setShowFormModal(true);
   };
@@ -216,9 +237,30 @@ export function useMedicationManager() {
           setActivity(current =>
             current.filter(item => item.medicationId !== medicineId),
           );
+          cancelMedicineAlarms(medicineId).catch(() => {});
         },
       },
     ]);
+  };
+
+  const updateMedicineAlarm = (
+    medicineId: string,
+    partial: Partial<{
+      alarmEnabled: boolean;
+      alarmSound: AlarmSoundId;
+      snoozeMinutes: SnoozeMinutes;
+    }>,
+  ) => {
+    setMedicines(current =>
+      current.map(item =>
+        item.id === medicineId
+          ? {
+              ...item,
+              ...partial,
+            }
+          : item,
+      ),
+    );
   };
 
   const markTaken = (medicine: Medicine) => {
@@ -282,6 +324,7 @@ export function useMedicationManager() {
     openEditForm,
     saveMedicine,
     deleteMedicine,
+    updateMedicineAlarm,
     markTaken,
     markMissed,
   };

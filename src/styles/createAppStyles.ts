@@ -1036,6 +1036,15 @@ export function createAppStyles(
       alignItems: 'center',
       marginBottom: 12,
     },
+    alarmCard: {
+      backgroundColor: c.card,
+      borderRadius: 16,
+      padding: 12 + tx,
+      marginBottom: 12,
+      borderWidth: cardBorder,
+      borderColor: c.line,
+      ...shadow,
+    },
     scheduleTimePill: {
       width: 64,
       borderRadius: 14,

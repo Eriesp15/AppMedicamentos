@@ -1,6 +1,6 @@
-import {ActivityItem, Medicine, UserProfile} from '../types/medication';
-import {EMPTY_MEDICINE_FORM} from '../constants/data';
-import {firestoreDb} from '../config/firebase';
+import { ActivityItem, Medicine, UserProfile } from '../types/medication';
+import { EMPTY_MEDICINE_FORM } from '../constants/data';
+import { firestoreDb } from '../config/firebase';
 import {
   collection,
   doc,
@@ -19,18 +19,17 @@ const PROFILE_DOCUMENT_ID = 'main';
 const userDocRef = () => doc(firestoreDb, USER_COLLECTION, USER_DOCUMENT_ID);
 const medicinesCollectionRef = () => collection(userDocRef(), 'medicines');
 const activityCollectionRef = () => collection(userDocRef(), 'activity');
-const profileDocRef = () =>
-  doc(userDocRef(), 'profile', PROFILE_DOCUMENT_ID);
+const profileDocRef = () => doc(userDocRef(), 'profile', PROFILE_DOCUMENT_ID);
 
 async function ensureUserDocument() {
   await setDoc(
     userDocRef(),
-    {updatedAt: new Date().toISOString()},
-    {merge: true},
+    { updatedAt: new Date().toISOString() },
+    { merge: true },
   );
 }
 
-async function syncCollection<T extends {id: string}>(
+async function syncCollection<T extends { id: string }>(
   collectionRef: ReturnType<typeof medicinesCollectionRef>,
   items: T[],
 ) {
@@ -54,11 +53,12 @@ async function syncCollection<T extends {id: string}>(
 }
 
 export async function loadPersistedData() {
-  const [medicinesSnapshot, activitySnapshot, profileSnapshot] = await Promise.all([
-    getDocs(query(medicinesCollectionRef(), orderBy('createdAt', 'desc'))),
-    getDocs(query(activityCollectionRef(), orderBy('date', 'desc'))),
-    getDoc(profileDocRef()),
-  ]);
+  const [medicinesSnapshot, activitySnapshot, profileSnapshot] =
+    await Promise.all([
+      getDocs(query(medicinesCollectionRef(), orderBy('createdAt', 'desc'))),
+      getDocs(query(activityCollectionRef(), orderBy('date', 'desc'))),
+      getDoc(profileDocRef()),
+    ]);
 
   return {
     medicines: medicinesSnapshot.docs.map(item => {
@@ -69,6 +69,12 @@ export async function loadPersistedData() {
         unit: data.unit || EMPTY_MEDICINE_FORM.unit,
         foodInstruction:
           data.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
+        alarmEnabled:
+          typeof data.alarmEnabled === 'boolean'
+            ? data.alarmEnabled
+            : EMPTY_MEDICINE_FORM.alarmEnabled,
+        alarmSound: data.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
+        snoozeMinutes: data.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
       };
     }),
     activity: activitySnapshot.docs.map(item => item.data() as ActivityItem),

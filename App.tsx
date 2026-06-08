@@ -1,19 +1,23 @@
-import React, {useState} from 'react';
-import {StatusBar} from 'react-native';
-import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import {BottomTabs} from './src/components/BottomTabs';
-import {MedicineFormModal} from './src/components/MedicineFormModal';
-import {AppSettingsProvider, useAppSettings} from './src/context/AppSettingsContext';
-import {useMedicationManager} from './src/hooks/useMedicationManager';
-import {AddMedicineScreen} from './src/screens/AddMedicineScreen';
-import {HomeScreen} from './src/screens/HomeScreen';
-import {MedicinesScreen} from './src/screens/MedicinesScreen';
-import {SchedulesScreen} from './src/screens/SchedulesScreen';
-import {SettingsScreen} from './src/screens/SettingsScreen';
-import {TrackingScreen} from './src/screens/TrackingScreen';
+import React, { useEffect, useState } from 'react';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { BottomTabs } from './src/components/BottomTabs';
+import { MedicineFormModal } from './src/components/MedicineFormModal';
+import {
+  AppSettingsProvider,
+  useAppSettings,
+} from './src/context/AppSettingsContext';
+import { useMedicationManager } from './src/hooks/useMedicationManager';
+import { AddMedicineScreen } from './src/screens/AddMedicineScreen';
+import { HomeScreen } from './src/screens/HomeScreen';
+import { MedicinesScreen } from './src/screens/MedicinesScreen';
+import { SchedulesScreen } from './src/screens/SchedulesScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+import { registerForegroundAlarmHandler } from './src/services/alarmService';
+import { TrackingScreen } from './src/screens/TrackingScreen';
 
 function AppShell() {
-  const {styles, statusBarStyle, statusBarBg} = useAppSettings();
+  const { styles, statusBarStyle, statusBarBg } = useAppSettings();
   const [showSettings, setShowSettings] = useState(false);
   const {
     activeTab,
@@ -35,9 +39,12 @@ function AppShell() {
     openEditForm,
     saveMedicine,
     deleteMedicine,
+    updateMedicineAlarm,
     markTaken,
     markMissed,
   } = useMedicationManager();
+
+  useEffect(() => registerForegroundAlarmHandler(), []);
 
   const openSettings = () => setShowSettings(true);
   const closeSettings = () => setShowSettings(false);
@@ -88,7 +95,13 @@ function AppShell() {
         )}
 
         {activeTab === 'schedules' && (
-          <SchedulesScreen medicines={medicines} onOpenSettings={openSettings} />
+          <SchedulesScreen
+            medicines={medicines}
+            onOpenSettings={openSettings}
+            onOpenEditForm={openEditForm}
+            onDeleteMedicine={deleteMedicine}
+            onUpdateMedicineAlarm={updateMedicineAlarm}
+          />
         )}
 
         {activeTab === 'tracking' && (

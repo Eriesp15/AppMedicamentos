@@ -10,6 +10,9 @@ export type Medicine = {
   startTime: string;
   foodInstruction: string;
   notes: string;
+  alarmEnabled: boolean;
+  alarmSound: AlarmSoundId;
+  snoozeMinutes: SnoozeMinutes;
   createdAt: string;
   active: boolean;
 };
@@ -33,6 +36,9 @@ export type MedicineForm = {
   startTime: string;
   foodInstruction: string;
   notes: string;
+  alarmEnabled: boolean;
+  alarmSound: AlarmSoundId;
+  snoozeMinutes: SnoozeMinutes;
 };
 
 export type UserProfile = {
@@ -44,3 +50,7 @@ export type UserProfile = {
   allergies: string;
   chronicConditions: string;
 };
+
+export type AlarmSoundId = 'gentle' | 'default' | 'classic';
+
+export type SnoozeMinutes = 5 | 10 | 15 | 30;

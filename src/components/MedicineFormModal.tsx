@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Modal,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -15,6 +16,7 @@ import {
   faFlask,
   faMinus,
   faPlus,
+  faVolumeHigh,
   faSyringe,
   faTablets,
   faTag,
@@ -22,11 +24,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from './AppIcon';
 import {
+  ALARM_SOUND_OPTIONS,
   FOOD_OPTIONS,
   FREQUENCIES,
   INPUT_LIMITS,
   MEDICINE_TYPES,
   MEDICINE_UNITS,
+  SNOOZE_OPTIONS,
 } from '../constants/data';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { MedicineForm } from '../types/medication';
@@ -368,6 +372,88 @@ export function MedicineFormFields({
         <Text style={appStyles.charCounter}>
           {form.notes.length}/{INPUT_LIMITS.MEDICINE_NOTES}
         </Text>
+      </View>
+
+      <View style={appStyles.fieldCard}>
+        <View style={appStyles.rowBetween}>
+          <View style={appStyles.formLabelRow}>
+            <View
+              style={[appStyles.formIconCircle, { backgroundColor: '#E8EDF8' }]}
+            >
+              <AppIcon icon={faVolumeHigh} color={palette.primary} size={18} />
+            </View>
+            <View>
+              <Text style={appStyles.inputLabel}>Alarma local</Text>
+              <Text style={appStyles.softText}>
+                Sonara aunque cierres la aplicacion.
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={form.alarmEnabled}
+            onValueChange={value =>
+              setForm(current => ({ ...current, alarmEnabled: value }))
+            }
+          />
+        </View>
+
+        <Text style={appStyles.settingsRowLabel}>Tono de alarma</Text>
+        <View style={appStyles.settingsChipRow}>
+          {ALARM_SOUND_OPTIONS.map(sound => (
+            <TouchableOpacity
+              key={sound.id}
+              style={[
+                appStyles.settingsChip,
+                form.alarmSound === sound.id
+                  ? appStyles.settingsChipActive
+                  : null,
+              ]}
+              onPress={() =>
+                setForm(current => ({ ...current, alarmSound: sound.id }))
+              }
+            >
+              <Text
+                style={[
+                  appStyles.settingsChipText,
+                  form.alarmSound === sound.id
+                    ? appStyles.settingsChipTextActive
+                    : null,
+                ]}
+              >
+                {sound.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={appStyles.settingsRowLabel}>Posponer</Text>
+        <View style={appStyles.settingsChipRow}>
+          {SNOOZE_OPTIONS.map(minutes => (
+            <TouchableOpacity
+              key={minutes}
+              style={[
+                appStyles.settingsChip,
+                form.snoozeMinutes === minutes
+                  ? appStyles.settingsChipActive
+                  : null,
+              ]}
+              onPress={() =>
+                setForm(current => ({ ...current, snoozeMinutes: minutes }))
+              }
+            >
+              <Text
+                style={[
+                  appStyles.settingsChipText,
+                  form.snoozeMinutes === minutes
+                    ? appStyles.settingsChipTextActive
+                    : null,
+                ]}
+              >
+                {minutes} min
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <View style={appStyles.actionRow}>
