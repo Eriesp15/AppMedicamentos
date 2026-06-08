@@ -173,7 +173,7 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
               onClose();
               onOpenProfile();
             }}>
-            <Text style={styles.bigButtonText}>IR A MI PERFIL</Text>
+            <Text style={styles.bigButtonText}>IR A SEGUIMIENTO</Text>
           </TouchableOpacity>
 
           <Text style={styles.settingsSectionTitle}>LECTURA Y PANTALLA</Text>

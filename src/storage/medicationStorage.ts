@@ -1,4 +1,5 @@
 import {ActivityItem, Medicine, UserProfile} from '../types/medication';
+import {EMPTY_MEDICINE_FORM} from '../constants/data';
 import {firestoreDb} from '../config/firebase';
 import {
   collection,
@@ -60,7 +61,16 @@ export async function loadPersistedData() {
   ]);
 
   return {
-    medicines: medicinesSnapshot.docs.map(item => item.data() as Medicine),
+    medicines: medicinesSnapshot.docs.map(item => {
+      const data = item.data() as Medicine;
+      return {
+        ...data,
+        medicineType: data.medicineType || EMPTY_MEDICINE_FORM.medicineType,
+        unit: data.unit || EMPTY_MEDICINE_FORM.unit,
+        foodInstruction:
+          data.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
+      };
+    }),
     activity: activitySnapshot.docs.map(item => item.data() as ActivityItem),
     profile: profileSnapshot.exists()
       ? (profileSnapshot.data() as UserProfile)

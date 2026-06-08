@@ -1,6 +1,6 @@
-import {useEffect, useMemo, useState} from 'react';
-import {Alert} from 'react-native';
-import {DEFAULT_PROFILE, EMPTY_MEDICINE_FORM} from '../constants/data';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
+import { DEFAULT_PROFILE, EMPTY_MEDICINE_FORM } from '../constants/data';
 import {
   ActivityItem,
   AppTab,
@@ -14,11 +14,19 @@ import {
   persistMedicines,
   persistProfile,
 } from '../storage/medicationStorage';
+import {
+  normalizeTime,
+  sanitizeDecimal,
+  sanitizeMedicineName,
+  sanitizeNotes,
+} from '../utils/inputSanitizers';
 
 export function useMedicationManager() {
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [showFormModal, setShowFormModal] = useState(false);
-  const [editingMedicineId, setEditingMedicineId] = useState<string | null>(null);
+  const [editingMedicineId, setEditingMedicineId] = useState<string | null>(
+    null,
+  );
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(new Date());
 
   const [medicines, setMedicines] = useState<Medicine[]>([]);
@@ -66,7 +74,8 @@ export function useMedicationManager() {
   const todayKey = useMemo(() => new Date().toDateString(), []);
 
   const todayActivity = useMemo(
-    () => activity.filter(item => new Date(item.date).toDateString() === todayKey),
+    () =>
+      activity.filter(item => new Date(item.date).toDateString() === todayKey),
     [activity, todayKey],
   );
 
@@ -107,26 +116,53 @@ export function useMedicationManager() {
     return medicines.filter(item => !todayStatusByMedication[item.id]).length;
   }, [medicines, todayStatusByMedication]);
 
+  const selectTab = (tab: AppTab) => {
+    if (tab === 'add') {
+      setEditingMedicineId(null);
+      setForm(EMPTY_MEDICINE_FORM);
+      setShowFormModal(false);
+    }
+    setActiveTab(tab);
+  };
+
   const openNewForm = () => {
     setEditingMedicineId(null);
     setForm(EMPTY_MEDICINE_FORM);
     setShowFormModal(true);
   };
 
+  const closeForm = () => {
+    setShowFormModal(false);
+    setEditingMedicineId(null);
+    setForm(EMPTY_MEDICINE_FORM);
+  };
+
   const openEditForm = (medicine: Medicine) => {
     setEditingMedicineId(medicine.id);
     setForm({
       name: medicine.name,
+      medicineType: medicine.medicineType || EMPTY_MEDICINE_FORM.medicineType,
+      unit: medicine.unit || EMPTY_MEDICINE_FORM.unit,
       dosage: medicine.dosage,
       frequency: medicine.frequency,
       startTime: medicine.startTime,
+      foodInstruction:
+        medicine.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
       notes: medicine.notes || '',
     });
     setShowFormModal(true);
   };
 
   const saveMedicine = () => {
-    if (!form.name.trim() || !form.dosage.trim()) {
+    const sanitizedForm: MedicineForm = {
+      ...form,
+      name: sanitizeMedicineName(form.name).trim(),
+      dosage: sanitizeDecimal(form.dosage),
+      startTime: normalizeTime(form.startTime),
+      notes: sanitizeNotes(form.notes).trim(),
+    };
+
+    if (!sanitizedForm.name || !sanitizedForm.dosage.trim()) {
       Alert.alert('Campos incompletos', 'Debes ingresar nombre y dosis.');
       return;
     }
@@ -134,16 +170,25 @@ export function useMedicationManager() {
     if (editingMedicineId) {
       setMedicines(current =>
         current.map(item =>
-          item.id === editingMedicineId
-            ? {...item, ...form, name: form.name.trim()}
+          item.id === editingMedicineId ? { ...item, ...sanitizedForm } : item,
+        ),
+      );
+      setActivity(current =>
+        current.map(item =>
+          item.medicationId === editingMedicineId
+            ? {
+                ...item,
+                medicationName: sanitizedForm.name,
+                scheduledTime: sanitizedForm.startTime,
+                dosage: sanitizedForm.dosage,
+              }
             : item,
         ),
       );
     } else {
       const newMedicine: Medicine = {
         id: `${Date.now()}`,
-        ...form,
-        name: form.name.trim(),
+        ...sanitizedForm,
         createdAt: new Date().toISOString(),
         active: true,
       };
@@ -152,17 +197,25 @@ export function useMedicationManager() {
 
     setShowFormModal(false);
     setEditingMedicineId(null);
+    if (activeTab === 'add') {
+      setForm(EMPTY_MEDICINE_FORM);
+      setActiveTab('medicines');
+    }
   };
 
   const deleteMedicine = (medicineId: string) => {
     Alert.alert('Eliminar medicamento', 'Esta accion no se puede deshacer.', [
-      {text: 'Cancelar', style: 'cancel'},
+      { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Eliminar',
         style: 'destructive',
         onPress: () => {
-          setMedicines(current => current.filter(item => item.id !== medicineId));
-          setActivity(current => current.filter(item => item.medicationId !== medicineId));
+          setMedicines(current =>
+            current.filter(item => item.id !== medicineId),
+          );
+          setActivity(current =>
+            current.filter(item => item.medicationId !== medicineId),
+          );
         },
       },
     ]);
@@ -206,7 +259,7 @@ export function useMedicationManager() {
 
   return {
     activeTab,
-    setActiveTab,
+    setActiveTab: selectTab,
     showFormModal,
     setShowFormModal,
     editingMedicineId,
@@ -225,6 +278,7 @@ export function useMedicationManager() {
     missedTodayCount,
     pendingTodayCount,
     openNewForm,
+    closeForm,
     openEditForm,
     saveMedicine,
     deleteMedicine,

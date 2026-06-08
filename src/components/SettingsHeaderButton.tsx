@@ -1,5 +1,7 @@
 import React from 'react';
-import {Text, TouchableOpacity} from 'react-native';
+import {TouchableOpacity} from 'react-native';
+import {faCog} from '@fortawesome/free-solid-svg-icons';
+import {AppIcon} from './AppIcon';
 import {useAppSettings} from '../context/AppSettingsContext';
 
 type Props = {
@@ -11,7 +13,7 @@ export function SettingsHeaderButton({
   onPress,
   accessibilityLabel = 'Abrir ajustes',
 }: Props) {
-  const {styles} = useAppSettings();
+  const {palette, styles} = useAppSettings();
   return (
     <TouchableOpacity
       style={styles.settingsHeaderButton}
@@ -19,9 +21,7 @@ export function SettingsHeaderButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}>
-      <Text style={styles.settingsHeaderIcon} accessibilityElementsHidden>
-        ⚙
-      </Text>
+      <AppIcon icon={faCog} color={palette.primaryDark} size={18} />
     </TouchableOpacity>
   );
 }
