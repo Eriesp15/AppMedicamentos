@@ -4,7 +4,7 @@ export type AppThemeMode = 'light' | 'dark' | 'highContrast';
 
 export type AlarmVolume = 'low' | 'medium' | 'high';
 
-export type AlarmSoundId = 'gentle' | 'default' | 'classic';
+export type AlarmSoundId = 'gentle' | 'default' | 'classic' | 'loud';
 
 export type ReminderAdvanceMinutes = 0 | 5 | 10 | 15;
 

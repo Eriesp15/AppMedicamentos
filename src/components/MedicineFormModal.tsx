@@ -15,6 +15,7 @@ import {
   faClock,
   faFlask,
   faMinus,
+  faPlay,
   faPlus,
   faVolumeHigh,
   faSyringe,
@@ -34,6 +35,7 @@ import {
 } from '../constants/data';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { MedicineForm } from '../types/medication';
+import { playAlarmPreview } from '../services/alarmService';
 import {
   formatTime,
   getTimeParts,
@@ -400,29 +402,37 @@ export function MedicineFormFields({
         <Text style={appStyles.settingsRowLabel}>Tono de alarma</Text>
         <View style={appStyles.settingsChipRow}>
           {ALARM_SOUND_OPTIONS.map(sound => (
-            <TouchableOpacity
-              key={sound.id}
-              style={[
-                appStyles.settingsChip,
-                form.alarmSound === sound.id
-                  ? appStyles.settingsChipActive
-                  : null,
-              ]}
-              onPress={() =>
-                setForm(current => ({ ...current, alarmSound: sound.id }))
-              }
-            >
-              <Text
+            <View key={sound.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
                 style={[
-                  appStyles.settingsChipText,
+                  appStyles.settingsChip,
                   form.alarmSound === sound.id
-                    ? appStyles.settingsChipTextActive
+                    ? appStyles.settingsChipActive
                     : null,
                 ]}
+                onPress={() =>
+                  setForm(current => ({ ...current, alarmSound: sound.id }))
+                }
               >
-                {sound.label}
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[
+                    appStyles.settingsChipText,
+                    form.alarmSound === sound.id
+                      ? appStyles.settingsChipTextActive
+                      : null,
+                  ]}
+                >
+                  {sound.label}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ padding: 8, marginLeft: 2 }}
+                onPress={() => playAlarmPreview(sound.id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <AppIcon icon={faPlay} size={14} color="#888" />
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
 

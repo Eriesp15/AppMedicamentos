@@ -145,6 +145,7 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
       gentle: [0, 120, 80, 120],
       default: [0, 220, 100, 220],
       classic: [0, 140, 70, 140, 70, 320],
+      loud: [0, 100, 200, 100, 200, 100],
     };
     Vibration.vibrate(patterns[sound]);
     Alert.alert(

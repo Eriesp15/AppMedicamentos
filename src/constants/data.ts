@@ -58,6 +58,12 @@ export const ALARM_SOUND_OPTIONS: {
     channelName: 'Alarmas clasicas',
     androidSound: 'med_alarm_classic',
   },
+  {
+    id: 'loud',
+    label: 'Fuerte',
+    channelName: 'Alarmas fuertes',
+    androidSound: 'med_alarm_loud',
+  },
 ];
 
 export const SNOOZE_OPTIONS: SnoozeMinutes[] = [5, 10, 15, 30];

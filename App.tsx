@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabs } from './src/components/BottomTabs';
@@ -9,16 +9,21 @@ import {
 } from './src/context/AppSettingsContext';
 import { useMedicationManager } from './src/hooks/useMedicationManager';
 import { AddMedicineScreen } from './src/screens/AddMedicineScreen';
+import { AlarmScreen, AlarmScreenData } from './src/screens/AlarmScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { MedicinesScreen } from './src/screens/MedicinesScreen';
 import { SchedulesScreen } from './src/screens/SchedulesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { registerForegroundAlarmHandler } from './src/services/alarmService';
+import {
+  registerForegroundAlarmHandler,
+  setOnAlarmFired,
+} from './src/services/alarmService';
 import { TrackingScreen } from './src/screens/TrackingScreen';
 
 function AppShell() {
   const { styles, statusBarStyle, statusBarBg } = useAppSettings();
   const [showSettings, setShowSettings] = useState(false);
+  const [activeAlarm, setActiveAlarm] = useState<AlarmScreenData | null>(null);
   const {
     activeTab,
     setActiveTab,
@@ -44,7 +49,21 @@ function AppShell() {
     markMissed,
   } = useMedicationManager();
 
-  useEffect(() => registerForegroundAlarmHandler(), []);
+  useEffect(() => {
+    const unsub = registerForegroundAlarmHandler();
+    setOnAlarmFired(data => {
+      const alarm: AlarmScreenData = {
+        medicationId: String(data.medicationId || ''),
+        medicationName: String(data.medicationName || 'Medicamento'),
+        scheduledTime: String(data.scheduledTime || ''),
+        dosage: String(data.dosage || ''),
+        snoozeMinutes: Number(data.snoozeMinutes || 10),
+        alarmSound: (String(data.alarmSound || 'default')) as AlarmScreenData['alarmSound'],
+      };
+      setActiveAlarm(alarm);
+    });
+    return () => unsub();
+  }, []);
 
   const openSettings = () => setShowSettings(true);
   const closeSettings = () => setShowSettings(false);
@@ -53,13 +72,29 @@ function AppShell() {
     setActiveTab('tracking');
   };
 
+  const handleTaken = useCallback((data: AlarmScreenData) => {
+    const medicine = medicines.find(m => m.id === data.medicationId);
+    if (medicine) {
+      markTaken(medicine);
+    }
+    setActiveAlarm(null);
+  }, [medicines, markTaken]);
+
+  const handleSnooze = useCallback((data: AlarmScreenData) => {
+    setActiveAlarm(null);
+  }, []);
+
   return (
     <>
-      <StatusBar
-        barStyle={statusBarStyle}
-        backgroundColor={statusBarBg}
-        translucent={false}
-      />
+      {activeAlarm ? (
+        <StatusBar hidden />
+      ) : (
+        <StatusBar
+          barStyle={statusBarStyle}
+          backgroundColor={statusBarBg}
+          translucent={false}
+        />
+      )}
       <SafeAreaView edges={['top']} style={styles.container}>
         {activeTab === 'home' && (
           <HomeScreen
@@ -126,6 +161,15 @@ function AppShell() {
           onSave={saveMedicine}
         />
       </SafeAreaView>
+
+      {activeAlarm && (
+        <AlarmScreen
+          alarm={activeAlarm}
+          onDismiss={() => setActiveAlarm(null)}
+          onTaken={handleTaken}
+          onSnooze={handleSnooze}
+        />
+      )}
 
       <SettingsScreen
         visible={showSettings}

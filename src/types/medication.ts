@@ -51,6 +51,6 @@ export type UserProfile = {
   chronicConditions: string;
 };
 
-export type AlarmSoundId = 'gentle' | 'default' | 'classic';
+export type AlarmSoundId = 'gentle' | 'default' | 'classic' | 'loud';
 
 export type SnoozeMinutes = 5 | 10 | 15 | 30;
