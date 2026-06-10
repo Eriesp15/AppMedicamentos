@@ -5,6 +5,7 @@ import { ALARM_SOUND_OPTIONS } from '../constants/data';
 import { AlarmSoundId } from '../types/medication';
 
 export type AlarmScreenData = {
+  notificationId?: string;
   medicationId: string;
   medicationName: string;
   scheduledTime: string;

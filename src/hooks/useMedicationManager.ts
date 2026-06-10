@@ -41,7 +41,7 @@ export function useMedicationManager() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [form, setForm] = useState<MedicineForm>(EMPTY_MEDICINE_FORM);
-  const [hasLoadedRemoteData, setHasLoadedRemoteData] = useState(false);
+  const [hasLoadedPersistedData, setHasLoadedPersistedData] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -53,37 +53,37 @@ export function useMedicationManager() {
           setProfile(data.profile);
         }
       } catch {
-        Alert.alert('Error', 'No se pudo cargar la informacion de Firebase.');
+        Alert.alert('Error', 'No se pudo cargar la informacion guardada.');
       } finally {
-        setHasLoadedRemoteData(true);
+        setHasLoadedPersistedData(true);
       }
     };
     loadData();
   }, []);
 
   useEffect(() => {
-    if (hasLoadedRemoteData) {
+    if (hasLoadedPersistedData) {
       persistMedicines(medicines).catch(() => {});
     }
-  }, [hasLoadedRemoteData, medicines]);
+  }, [hasLoadedPersistedData, medicines]);
 
   useEffect(() => {
-    if (hasLoadedRemoteData) {
+    if (hasLoadedPersistedData) {
       persistActivity(activity).catch(() => {});
     }
-  }, [activity, hasLoadedRemoteData]);
+  }, [activity, hasLoadedPersistedData]);
 
   useEffect(() => {
-    if (hasLoadedRemoteData) {
+    if (hasLoadedPersistedData) {
       persistProfile(profile).catch(() => {});
     }
-  }, [hasLoadedRemoteData, profile]);
+  }, [hasLoadedPersistedData, profile]);
 
   useEffect(() => {
-    if (hasLoadedRemoteData) {
+    if (hasLoadedPersistedData) {
       scheduleAllMedicineAlarms(medicines, settings).catch(() => {});
     }
-  }, [hasLoadedRemoteData, medicines, settings]);
+  }, [hasLoadedPersistedData, medicines, settings]);
 
   const todayKey = useMemo(() => new Date().toDateString(), []);
 

@@ -1,5 +1,6 @@
 import { ActivityItem, Medicine, UserProfile } from '../types/medication';
-import { EMPTY_MEDICINE_FORM } from '../constants/data';
+import { EMPTY_MEDICINE_FORM, STORAGE_KEYS } from '../constants/data';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firestoreDb } from '../config/firebase';
 import {
   collection,
@@ -21,12 +22,84 @@ const medicinesCollectionRef = () => collection(userDocRef(), 'medicines');
 const activityCollectionRef = () => collection(userDocRef(), 'activity');
 const profileDocRef = () => doc(userDocRef(), 'profile', PROFILE_DOCUMENT_ID);
 
+type PersistedData = {
+  medicines: Medicine[];
+  activity: ActivityItem[];
+  profile?: UserProfile;
+};
+
 async function ensureUserDocument() {
   await setDoc(
     userDocRef(),
     { updatedAt: new Date().toISOString() },
     { merge: true },
   );
+}
+
+function normalizeMedicine(data: Medicine): Medicine {
+  return {
+    ...data,
+    medicineType: data.medicineType || EMPTY_MEDICINE_FORM.medicineType,
+    unit: data.unit || EMPTY_MEDICINE_FORM.unit,
+    foodInstruction: data.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
+    alarmEnabled:
+      typeof data.alarmEnabled === 'boolean'
+        ? data.alarmEnabled
+        : EMPTY_MEDICINE_FORM.alarmEnabled,
+    alarmSound: data.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
+    snoozeMinutes: data.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
+  };
+}
+
+function parseJson<T>(raw: string | null, fallback: T): T {
+  if (!raw) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+async function loadLocalData(): Promise<PersistedData> {
+  const entries = await AsyncStorage.multiGet([
+    STORAGE_KEYS.MEDICINES,
+    STORAGE_KEYS.ACTIVITY,
+    STORAGE_KEYS.PROFILE,
+  ]);
+  const values = Object.fromEntries(entries);
+  const medicines = parseJson<Medicine[]>(values[STORAGE_KEYS.MEDICINES], []);
+  const activity = parseJson<ActivityItem[]>(values[STORAGE_KEYS.ACTIVITY], []);
+  const profile = parseJson<UserProfile | undefined>(
+    values[STORAGE_KEYS.PROFILE],
+    undefined,
+  );
+
+  return {
+    medicines: medicines.map(normalizeMedicine),
+    activity,
+    profile,
+  };
+}
+
+async function persistLocalData(data: Partial<PersistedData>) {
+  const writes: [string, string][] = [];
+
+  if (data.medicines) {
+    writes.push([STORAGE_KEYS.MEDICINES, JSON.stringify(data.medicines)]);
+  }
+  if (data.activity) {
+    writes.push([STORAGE_KEYS.ACTIVITY, JSON.stringify(data.activity)]);
+  }
+  if (data.profile) {
+    writes.push([STORAGE_KEYS.PROFILE, JSON.stringify(data.profile)]);
+  }
+
+  if (writes.length) {
+    await AsyncStorage.multiSet(writes);
+  }
 }
 
 async function syncCollection<T extends { id: string }>(
@@ -52,7 +125,7 @@ async function syncCollection<T extends { id: string }>(
   await batch.commit();
 }
 
-export async function loadPersistedData() {
+async function loadRemoteData(): Promise<PersistedData> {
   const [medicinesSnapshot, activitySnapshot, profileSnapshot] =
     await Promise.all([
       getDocs(query(medicinesCollectionRef(), orderBy('createdAt', 'desc'))),
@@ -61,22 +134,9 @@ export async function loadPersistedData() {
     ]);
 
   return {
-    medicines: medicinesSnapshot.docs.map(item => {
-      const data = item.data() as Medicine;
-      return {
-        ...data,
-        medicineType: data.medicineType || EMPTY_MEDICINE_FORM.medicineType,
-        unit: data.unit || EMPTY_MEDICINE_FORM.unit,
-        foodInstruction:
-          data.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
-        alarmEnabled:
-          typeof data.alarmEnabled === 'boolean'
-            ? data.alarmEnabled
-            : EMPTY_MEDICINE_FORM.alarmEnabled,
-        alarmSound: data.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
-        snoozeMinutes: data.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
-      };
-    }),
+    medicines: medicinesSnapshot.docs
+      .map(item => item.data() as Medicine)
+      .map(normalizeMedicine),
     activity: activitySnapshot.docs.map(item => item.data() as ActivityItem),
     profile: profileSnapshot.exists()
       ? (profileSnapshot.data() as UserProfile)
@@ -84,15 +144,39 @@ export async function loadPersistedData() {
   };
 }
 
+function hasLocalData(data: PersistedData) {
+  return Boolean(data.medicines.length || data.activity.length || data.profile);
+}
+
+export async function loadPersistedData() {
+  const localData = await loadLocalData();
+
+  if (hasLocalData(localData)) {
+    return localData;
+  }
+
+  try {
+    const remoteData = await loadRemoteData();
+    await persistLocalData(remoteData);
+    return remoteData;
+  } catch {
+    return localData;
+  }
+}
+
 export async function persistMedicines(medicines: Medicine[]) {
-  await syncCollection(medicinesCollectionRef(), medicines);
+  await persistLocalData({ medicines });
+  syncCollection(medicinesCollectionRef(), medicines).catch(() => {});
 }
 
 export async function persistActivity(activity: ActivityItem[]) {
-  await syncCollection(activityCollectionRef(), activity);
+  await persistLocalData({ activity });
+  syncCollection(activityCollectionRef(), activity).catch(() => {});
 }
 
 export async function persistProfile(profile: UserProfile) {
-  await ensureUserDocument();
-  await setDoc(profileDocRef(), profile);
+  await persistLocalData({ profile });
+  ensureUserDocument()
+    .then(() => setDoc(profileDocRef(), profile))
+    .catch(() => {});
 }

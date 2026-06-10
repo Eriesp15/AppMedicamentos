@@ -17,11 +17,17 @@ import {
 import { ActivityItem, Medicine } from '../types/medication';
 import { AppSettings } from '../types/settings';
 import { getTimeParts } from '../utils/inputSanitizers';
+import {
+  scheduleAlarmLaunch,
+  cancelAlarmLaunch,
+  requestSpecialAlarmPermissions,
+} from './AlarmLaunchNative';
 
 const ACTION_TAKEN = 'medicine-taken';
 const ACTION_SNOOZE = 'medicine-snooze';
 const NOTIFICATION_PREFIX = 'medicine-alarm';
 type NotificationData = { [key: string]: string | number | object };
+let didRequestSpecialAlarmPermissions = false;
 
 function getAlarmSound(soundId: Medicine['alarmSound']) {
   return (
@@ -73,6 +79,20 @@ function createNotificationData(medicine: Medicine) {
   };
 }
 
+export function alarmDataFromPayload(
+  data: Record<string, unknown>,
+): Record<string, string | number> {
+  return {
+    notificationId: String(data.notificationId || ''),
+    medicationId: String(data.medicationId || ''),
+    medicationName: String(data.medicationName || 'Medicamento'),
+    scheduledTime: String(data.scheduledTime || ''),
+    dosage: String(data.dosage || ''),
+    snoozeMinutes: Number(data.snoozeMinutes || 10),
+    alarmSound: String(data.alarmSound || 'default'),
+  };
+}
+
 export async function requestAlarmPermissions() {
   await notifee.requestPermission();
   if (Platform.OS === 'android' && Platform.Version >= 34) {
@@ -81,6 +101,10 @@ export async function requestAlarmPermissions() {
         'android.permission.USE_FULL_SCREEN_INTENT',
       );
     } catch (_) {}
+  }
+  if (Platform.OS === 'android' && !didRequestSpecialAlarmPermissions) {
+    didRequestSpecialAlarmPermissions = true;
+    await requestSpecialAlarmPermissions().catch(() => {});
   }
 }
 
@@ -136,7 +160,9 @@ async function ensureAlarmChannel(medicine: Medicine, settings: AppSettings) {
 }
 
 export async function cancelMedicineAlarms(medicineId: string) {
-  await notifee.cancelTriggerNotifications(getNotificationIds(medicineId));
+  const ids = getNotificationIds(medicineId);
+  await Promise.all(ids.map(id => cancelAlarmLaunch(id)));
+  await notifee.cancelTriggerNotifications(ids);
 }
 
 export async function scheduleMedicineAlarms(
@@ -156,18 +182,22 @@ export async function scheduleMedicineAlarms(
 
   await Promise.all(
     offsets.map((offset, index) => {
+      const timestamp = getNextDailyTimestamp(
+        medicine.startTime,
+        offset,
+        settings.reminderMinutesBefore,
+      );
+      const notificationId = getNotificationIds(medicine.id)[index];
       const trigger: TimestampTrigger = {
         type: TriggerType.TIMESTAMP,
-        timestamp: getNextDailyTimestamp(
-          medicine.startTime,
-          offset,
-          settings.reminderMinutesBefore,
-        ),
+        timestamp,
         repeatFrequency: RepeatFrequency.DAILY,
         alarmManager: {
           type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
         },
       };
+
+      scheduleAlarmLaunch(timestamp, notificationId, createNotificationData(medicine));
 
       return notifee.createTriggerNotification(
         {
@@ -179,7 +209,11 @@ export async function scheduleMedicineAlarms(
             channelId,
             category: AndroidCategory.ALARM,
             pressAction: { id: 'open-app' },
-            fullScreenAction: { id: 'default' },
+            fullScreenAction: {
+              id: 'default',
+              launchActivity: '.AlarmActivity',
+            },
+
             showTimestamp: true,
             loopSound: true,
             sound:
@@ -217,7 +251,7 @@ export async function scheduleAllMedicineAlarms(
   );
 }
 
-async function markNotificationDoseAsTaken(data: Record<string, unknown>) {
+export async function markNotificationDoseAsTaken(data: Record<string, unknown>) {
   const medicationId = String(data.medicationId || '');
   if (!medicationId) {
     return;
@@ -248,7 +282,7 @@ async function markNotificationDoseAsTaken(data: Record<string, unknown>) {
   await persistActivity([item, ...persisted.activity]);
 }
 
-async function snoozeNotification(data: Record<string, unknown>) {
+export async function snoozeNotification(data: Record<string, unknown>) {
   const medicationId = String(data.medicationId || '');
   const snoozeMinutes = Number(data.snoozeMinutes || 10);
   const soundId = String(
@@ -262,9 +296,20 @@ async function snoozeNotification(data: Record<string, unknown>) {
     sound: sound.androidSound === 'default' ? 'default' : sound.androidSound,
   });
 
+  const snoozeNotificationId = `${NOTIFICATION_PREFIX}-${medicationId}-snooze`;
+  const snoozeTimestamp = Date.now() + snoozeMinutes * 60 * 1000;
+  scheduleAlarmLaunch(snoozeTimestamp, snoozeNotificationId, {
+    medicationId,
+    medicationName: String(data.medicationName || 'Medicamento'),
+    scheduledTime: String(data.scheduledTime || ''),
+    dosage: String(data.dosage || ''),
+    snoozeMinutes,
+    alarmSound: soundId,
+  });
+
   await notifee.createTriggerNotification(
     {
-      id: `${NOTIFICATION_PREFIX}-${medicationId}-snooze`,
+      id: snoozeNotificationId,
       title: `⏰ Recordatorio (${snoozeMinutes} min)`,
       body: `${String(data.medicationName || 'Medicamento')} - ${String(
         data.dosage || '',
@@ -274,7 +319,10 @@ async function snoozeNotification(data: Record<string, unknown>) {
         channelId,
         category: AndroidCategory.ALARM,
         pressAction: { id: 'open-app' },
-        fullScreenAction: { id: 'default' },
+        fullScreenAction: {
+          id: 'default',
+          launchActivity: '.AlarmActivity',
+        },
         showTimestamp: true,
         loopSound: true,
         sound:
@@ -299,7 +347,7 @@ async function snoozeNotification(data: Record<string, unknown>) {
     },
     {
       type: TriggerType.TIMESTAMP,
-      timestamp: Date.now() + snoozeMinutes * 60 * 1000,
+      timestamp: snoozeTimestamp,
       alarmManager: {
         type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
       },

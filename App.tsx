@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { StatusBar } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform, StatusBar, Alert, Linking } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import notifee from '@notifee/react-native';
 import { BottomTabs } from './src/components/BottomTabs';
 import { MedicineFormModal } from './src/components/MedicineFormModal';
 import {
@@ -15,12 +16,20 @@ import { MedicinesScreen } from './src/screens/MedicinesScreen';
 import { SchedulesScreen } from './src/screens/SchedulesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import {
+  alarmDataFromPayload,
+  markNotificationDoseAsTaken,
   registerForegroundAlarmHandler,
   setOnAlarmFired,
+  snoozeNotification,
 } from './src/services/alarmService';
+import { clearAlarmLaunchNotification } from './src/services/AlarmLaunchNative';
 import { TrackingScreen } from './src/screens/TrackingScreen';
 
-function AppShell() {
+type InitialAlarmProps = Partial<AlarmScreenData> & {
+  fromNativeAlarm?: boolean;
+};
+
+function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   const { styles, statusBarStyle, statusBarBg } = useAppSettings();
   const [showSettings, setShowSettings] = useState(false);
   const [activeAlarm, setActiveAlarm] = useState<AlarmScreenData | null>(null);
@@ -49,21 +58,61 @@ function AppShell() {
     markMissed,
   } = useMedicationManager();
 
+  const activeAlarmRef = useRef(activeAlarm);
+  activeAlarmRef.current = activeAlarm;
+  const handledInitialRef = useRef(false);
+
   useEffect(() => {
     const unsub = registerForegroundAlarmHandler();
-    setOnAlarmFired(data => {
+    const alarmFromData = (data: Record<string, unknown>) => {
+      const normalized = alarmDataFromPayload(data);
       const alarm: AlarmScreenData = {
-        medicationId: String(data.medicationId || ''),
-        medicationName: String(data.medicationName || 'Medicamento'),
-        scheduledTime: String(data.scheduledTime || ''),
-        dosage: String(data.dosage || ''),
-        snoozeMinutes: Number(data.snoozeMinutes || 10),
-        alarmSound: (String(data.alarmSound || 'default')) as AlarmScreenData['alarmSound'],
+        notificationId: String(normalized.notificationId || ''),
+        medicationId: String(normalized.medicationId || ''),
+        medicationName: String(normalized.medicationName || 'Medicamento'),
+        scheduledTime: String(normalized.scheduledTime || ''),
+        dosage: String(normalized.dosage || ''),
+        snoozeMinutes: Number(normalized.snoozeMinutes || 10),
+        alarmSound: String(
+          normalized.alarmSound || 'default',
+        ) as AlarmScreenData['alarmSound'],
       };
       setActiveAlarm(alarm);
-    });
-    return () => unsub();
-  }, []);
+    };
+    setOnAlarmFired(alarmFromData);
+
+    if (initialAlarm?.fromNativeAlarm && initialAlarm.medicationId) {
+      alarmFromData(initialAlarm as Record<string, unknown>);
+    }
+
+    if (!handledInitialRef.current) {
+      handledInitialRef.current = true;
+      notifee.getInitialNotification().then(initial => {
+        if (initial?.notification?.data?.medicationId) {
+          alarmFromData(initial.notification.data as Record<string, unknown>);
+        }
+      });
+    }
+
+    const pollInterval = setInterval(async () => {
+      if (activeAlarmRef.current) return;
+      try {
+        const displayed = await notifee.getDisplayedNotifications();
+        for (const item of displayed) {
+          const d = item.notification?.data;
+          if (d && d.medicationId) {
+            alarmFromData(d as Record<string, unknown>);
+            break;
+          }
+        }
+      } catch (_) {}
+    }, 1000);
+
+    return () => {
+      unsub();
+      clearInterval(pollInterval);
+    };
+  }, [initialAlarm]);
 
   const openSettings = () => setShowSettings(true);
   const closeSettings = () => setShowSettings(false);
@@ -72,17 +121,25 @@ function AppShell() {
     setActiveTab('tracking');
   };
 
+  const closeActiveAlarm = useCallback((data?: AlarmScreenData | null) => {
+    clearAlarmLaunchNotification(data?.notificationId);
+    setActiveAlarm(null);
+  }, []);
+
   const handleTaken = useCallback((data: AlarmScreenData) => {
     const medicine = medicines.find(m => m.id === data.medicationId);
     if (medicine) {
       markTaken(medicine);
+    } else {
+      markNotificationDoseAsTaken(data).catch(() => {});
     }
-    setActiveAlarm(null);
-  }, [medicines, markTaken]);
+    closeActiveAlarm(data);
+  }, [closeActiveAlarm, medicines, markTaken]);
 
   const handleSnooze = useCallback((data: AlarmScreenData) => {
-    setActiveAlarm(null);
-  }, []);
+    snoozeNotification(data).catch(() => {});
+    closeActiveAlarm(data);
+  }, [closeActiveAlarm]);
 
   return (
     <>
@@ -165,7 +222,7 @@ function AppShell() {
       {activeAlarm && (
         <AlarmScreen
           alarm={activeAlarm}
-          onDismiss={() => setActiveAlarm(null)}
+          onDismiss={() => closeActiveAlarm(activeAlarm)}
           onTaken={handleTaken}
           onSnooze={handleSnooze}
         />
@@ -180,11 +237,11 @@ function AppShell() {
   );
 }
 
-function App() {
+function App(props: InitialAlarmProps) {
   return (
     <SafeAreaProvider>
       <AppSettingsProvider>
-        <AppShell />
+        <AppShell initialAlarm={props} />
       </AppSettingsProvider>
     </SafeAreaProvider>
   );
