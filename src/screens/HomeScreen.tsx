@@ -41,11 +41,23 @@ export function HomeScreen({
   profileName,
 }: Props) {
   const {palette, styles: appStyles} = useAppSettings();
-  const nextMedicine = medicines.find(item => !todayStatusByMedication[item.id]);
   const missedMedicines = medicines.filter(
     item => todayStatusByMedication[item.id] === 'missed',
   );
   const pendingMedicines = medicines.filter(item => !todayStatusByMedication[item.id]);
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const nextMedicine = pendingMedicines.length === 0
+    ? undefined
+    : pendingMedicines
+        .map(m => {
+          const [h, min] = m.startTime.split(':').map(Number);
+          const medicineMinutes = h * 60 + min;
+          let diff = medicineMinutes - currentMinutes;
+          if (diff < 0) diff += 1440;
+          return {m, diff};
+        })
+        .sort((a, b) => a.diff - b.diff)[0].m;
   const todayLabel = new Intl.DateTimeFormat('es-BO', {
     day: 'numeric',
     month: 'long',
