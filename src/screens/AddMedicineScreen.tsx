@@ -2,15 +2,16 @@ import React from 'react';
 import {ScrollView, Text, View} from 'react-native';
 import {MedicineFormFields} from '../components/MedicineFormModal';
 import {useAppSettings} from '../context/AppSettingsContext';
-import {MedicineForm} from '../types/medication';
+import {MedicationSuggestion, MedicineForm} from '../types/medication';
 
 type Props = {
   form: MedicineForm;
   setForm: React.Dispatch<React.SetStateAction<MedicineForm>>;
   onSave: () => void;
+  medicationCatalog: MedicationSuggestion[];
 };
 
-export function AddMedicineScreen({form, setForm, onSave}: Props) {
+export function AddMedicineScreen({form, setForm, onSave, medicationCatalog}: Props) {
   const {styles: appStyles} = useAppSettings();
 
   return (
@@ -30,6 +31,7 @@ export function AddMedicineScreen({form, setForm, onSave}: Props) {
           setForm={setForm}
           onSave={onSave}
           saveLabel="Guardar medicamento"
+          medicationCatalog={medicationCatalog}
         />
       </View>
     </ScrollView>

@@ -51,6 +51,15 @@ export type UserProfile = {
   chronicConditions: string;
 };
 
+export type MedicationSuggestion = {
+  name: string;
+  medicineType: string;
+  unit: string;
+  dosage: string;
+  frequency: string;
+  foodInstruction: string;
+};
+
 export type AlarmSoundId = 'gentle' | 'default' | 'classic' | 'loud';
 
 export type SnoozeMinutes = 5 | 10 | 15 | 30;

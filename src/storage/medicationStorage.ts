@@ -1,5 +1,5 @@
-import { ActivityItem, Medicine, UserProfile } from '../types/medication';
-import { EMPTY_MEDICINE_FORM, STORAGE_KEYS } from '../constants/data';
+import { ActivityItem, Medicine, MedicationSuggestion, UserProfile } from '../types/medication';
+import { EMPTY_MEDICINE_FORM, MEDICATION_DATABASE, STORAGE_KEYS } from '../constants/data';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firestoreDb } from '../config/firebase';
 import {
@@ -23,6 +23,7 @@ const userDocRef = () => doc(firestoreDb, USER_COLLECTION, USER_DOCUMENT_ID);
 const medicinesCollectionRef = () => collection(userDocRef(), 'medicines');
 const activityCollectionRef = () => collection(userDocRef(), 'activity');
 const profileDocRef = () => doc(userDocRef(), 'profile', PROFILE_DOCUMENT_ID);
+const catalogCollectionRef = () => collection(userDocRef(), 'medicationCatalog');
 
 type PersistedData = {
   medicines: Medicine[];
@@ -246,6 +247,70 @@ export function subscribeToMedicines(
         normalizeMedicine(d.data() as Medicine),
       );
       onUpdate(medicines);
+    },
+    onError,
+  );
+}
+
+export const CATALOG_STORAGE_KEY = '@medicare/medicationCatalog';
+
+export async function seedMedicationCatalogIfEmpty(): Promise<MedicationSuggestion[]> {
+  try {
+    const remoteSnapshot = await getDocs(catalogCollectionRef());
+    if (!remoteSnapshot.empty) {
+      const remote: MedicationSuggestion[] = remoteSnapshot.docs.map(
+        d => d.data() as MedicationSuggestion,
+      );
+      await AsyncStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(remote));
+      return remote;
+    }
+    await Promise.all(
+      MEDICATION_DATABASE.map(med =>
+        setDoc(doc(catalogCollectionRef(), med.name), med).catch(() => {}),
+      ),
+    );
+    await AsyncStorage.setItem(
+      CATALOG_STORAGE_KEY,
+      JSON.stringify(MEDICATION_DATABASE),
+    );
+    return MEDICATION_DATABASE;
+  } catch {
+    const local = await AsyncStorage.getItem(CATALOG_STORAGE_KEY);
+    if (local) {
+      return JSON.parse(local) as MedicationSuggestion[];
+    }
+    return MEDICATION_DATABASE;
+  }
+}
+
+export async function loadMedicationCatalog(): Promise<MedicationSuggestion[]> {
+  try {
+    const remoteSnapshot = await getDocs(catalogCollectionRef());
+    if (!remoteSnapshot.empty) {
+      const remote: MedicationSuggestion[] = remoteSnapshot.docs.map(
+        d => d.data() as MedicationSuggestion,
+      );
+      await AsyncStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(remote));
+      return remote;
+    }
+  } catch {}
+  const local = await AsyncStorage.getItem(CATALOG_STORAGE_KEY);
+  if (local) {
+    return JSON.parse(local) as MedicationSuggestion[];
+  }
+  return [];
+}
+
+export function subscribeToMedicationCatalog(
+  onUpdate: (catalog: MedicationSuggestion[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  return onSnapshot(
+    catalogCollectionRef(),
+    snapshot => {
+      const catalog = snapshot.docs.map(d => d.data() as MedicationSuggestion);
+      onUpdate(catalog);
+      AsyncStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(catalog)).catch(() => {});
     },
     onError,
   );

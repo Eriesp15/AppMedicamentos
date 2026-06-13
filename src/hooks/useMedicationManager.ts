@@ -10,6 +10,7 @@ import {
   ActivityItem,
   AlarmSoundId,
   AppTab,
+  MedicationSuggestion,
   Medicine,
   MedicineForm,
   SnoozeMinutes,
@@ -23,7 +24,9 @@ import {
   persistActivity,
   persistMedicines,
   persistProfile,
+  seedMedicationCatalogIfEmpty,
   subscribeToActivity,
+  subscribeToMedicationCatalog,
   subscribeToMedicines,
 } from '../storage/medicationStorage';
 import {
@@ -46,12 +49,14 @@ export function useMedicationManager() {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [form, setForm] = useState<MedicineForm>(EMPTY_MEDICINE_FORM);
+  const [medicationCatalog, setMedicationCatalog] = useState<MedicationSuggestion[]>([]);
   const [hasLoadedPersistedData, setHasLoadedPersistedData] = useState(false);
 
   const isRemoteMedicinesUpdate = useRef(false);
   const isRemoteActivityUpdate = useRef(false);
   const medicinesUnsubscribe = useRef<(() => void) | null>(null);
   const activityUnsubscribe = useRef<(() => void) | null>(null);
+  const catalogUnsubscribe = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -62,6 +67,8 @@ export function useMedicationManager() {
         if (data.profile) {
           setProfile(data.profile);
         }
+        const catalog = await seedMedicationCatalogIfEmpty();
+        setMedicationCatalog(catalog);
       } catch {
         Alert.alert('Error', 'No se pudo cargar la informacion guardada.');
       } finally {
@@ -85,6 +92,11 @@ export function useMedicationManager() {
       () => {},
     );
 
+    catalogUnsubscribe.current = subscribeToMedicationCatalog(
+      catalog => setMedicationCatalog(catalog),
+      () => {},
+    );
+
     activityUnsubscribe.current = subscribeToActivity(
       async remoteActivity => {
         isRemoteActivityUpdate.current = true;
@@ -100,6 +112,9 @@ export function useMedicationManager() {
       }
       if (activityUnsubscribe.current) {
         activityUnsubscribe.current();
+      }
+      if (catalogUnsubscribe.current) {
+        catalogUnsubscribe.current();
       }
     };
   }, [hasLoadedPersistedData]);
@@ -359,6 +374,7 @@ export function useMedicationManager() {
     setProfile,
     form,
     setForm,
+    medicationCatalog,
     takenTodayCount,
     adherencePercent,
     selectedDateActivities,

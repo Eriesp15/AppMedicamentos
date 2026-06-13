@@ -49,6 +49,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
     todayStatusByMedication,
     missedTodayCount,
     pendingTodayCount,
+    medicationCatalog,
     openNewForm,
     closeForm,
     openEditForm,
@@ -209,6 +210,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
             form={form}
             setForm={setForm}
             onSave={saveMedicine}
+            medicationCatalog={medicationCatalog}
           />
         )}
 
@@ -242,6 +244,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
           setForm={setForm}
           onClose={closeForm}
           onSave={saveMedicine}
+          medicationCatalog={medicationCatalog}
         />
       </SafeAreaView>
 

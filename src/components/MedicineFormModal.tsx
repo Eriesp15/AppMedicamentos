@@ -24,6 +24,7 @@ import {
   faUtensils,
 } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from './AppIcon';
+import { MedicationAutocomplete } from './MedicationAutocomplete';
 import {
   ALARM_SOUND_OPTIONS,
   FOOD_OPTIONS,
@@ -34,13 +35,12 @@ import {
   SNOOZE_OPTIONS,
 } from '../constants/data';
 import { useAppSettings } from '../context/AppSettingsContext';
-import { MedicineForm } from '../types/medication';
+import { MedicationSuggestion, MedicineForm } from '../types/medication';
 import { playAlarmPreview } from '../services/alarmService';
 import {
   formatTime,
   getTimeParts,
   sanitizeDecimal,
-  sanitizeMedicineName,
   sanitizeNotes,
 } from '../utils/inputSanitizers';
 
@@ -51,6 +51,7 @@ type Props = {
   setForm: React.Dispatch<React.SetStateAction<MedicineForm>>;
   onClose: () => void;
   onSave: () => void;
+  medicationCatalog: MedicationSuggestion[];
 };
 
 type FormFieldsProps = {
@@ -59,6 +60,7 @@ type FormFieldsProps = {
   onSave: () => void;
   onCancel?: () => void;
   saveLabel?: string;
+  medicationCatalog: MedicationSuggestion[];
 };
 
 export function MedicineFormFields({
@@ -67,6 +69,7 @@ export function MedicineFormFields({
   onSave,
   onCancel,
   saveLabel = 'Guardar medicamento',
+  medicationCatalog,
 }: FormFieldsProps) {
   const { styles: appStyles, palette } = useAppSettings();
   const timeParts = getTimeParts(form.startTime);
@@ -123,19 +126,13 @@ export function MedicineFormFields({
           </View>
           <Text style={appStyles.inputLabel}>Nombre del medicamento</Text>
         </View>
-        <TextInput
-          style={appStyles.input}
+        <MedicationAutocomplete
+          form={form}
+          setForm={setForm}
           placeholder="Ej: Metformina"
           placeholderTextColor={palette.placeholderText}
           maxLength={INPUT_LIMITS.MEDICINE_NAME}
-          value={form.name}
-          autoCapitalize="words"
-          onChangeText={value =>
-            setForm(current => ({
-              ...current,
-              name: sanitizeMedicineName(value),
-            }))
-          }
+          medicationCatalog={medicationCatalog}
         />
         <Text style={appStyles.charCounter}>
           {form.name.length}/{INPUT_LIMITS.MEDICINE_NAME}
@@ -561,6 +558,7 @@ export function MedicineFormModal({
   setForm,
   onClose,
   onSave,
+  medicationCatalog,
 }: Props) {
   const { styles: appStyles } = useAppSettings();
   return (
@@ -581,6 +579,7 @@ export function MedicineFormModal({
               setForm={setForm}
               onCancel={onClose}
               onSave={onSave}
+              medicationCatalog={medicationCatalog}
             />
           </ScrollView>
         </View>

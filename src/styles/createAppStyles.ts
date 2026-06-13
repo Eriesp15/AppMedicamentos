@@ -1217,6 +1217,55 @@ export function createAppStyles(
       fontSize: fs(12),
       fontWeight: 'normal',
     },
+    autocompleteList: {
+      position: 'absolute',
+      top: 48,
+      left: 0,
+      right: 0,
+      backgroundColor: c.card,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.line,
+      maxHeight: 200,
+      zIndex: 999,
+      ...shadow,
+    },
+    autocompleteItem: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: c.line,
+    },
+    autocompleteItemText: {
+      fontFamily: font,
+      color: c.text,
+      fontSize: fs(14),
+    },
+    autocompleteItemSubtext: {
+      fontFamily: font,
+      color: c.textSoft,
+      fontSize: fs(11),
+      marginTop: 2,
+    },
+    autocompleteItemDosage: {
+      fontFamily: font,
+      color: c.primary,
+      fontSize: fs(13),
+    },
+    autocompleteEmpty: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    autocompleteEmptyText: {
+      fontFamily: font,
+      color: c.textSoft,
+      fontSize: fs(13),
+      fontStyle: 'italic',
+    },
+    nameFieldWrapper: {
+      position: 'relative',
+      zIndex: 99,
+    },
   });
 }
 
