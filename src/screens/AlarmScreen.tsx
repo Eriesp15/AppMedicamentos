@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Text, TouchableOpacity, View, Vibration, Dimensions } from 'react-native';
-import notifee, { AndroidCategory } from '@notifee/react-native';
 import { ALARM_SOUND_OPTIONS } from '../constants/data';
 import { AlarmSoundId } from '../types/medication';
 

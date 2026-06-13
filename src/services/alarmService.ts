@@ -20,6 +20,7 @@ import { getTimeParts } from '../utils/inputSanitizers';
 import {
   scheduleAlarmLaunch,
   cancelAlarmLaunch,
+  clearAlarmLaunchNotification,
   requestSpecialAlarmPermissions,
 } from './AlarmLaunchNative';
 
@@ -68,8 +69,9 @@ function getNextDailyTimestamp(
   return next.getTime();
 }
 
-function createNotificationData(medicine: Medicine) {
+function createNotificationData(medicine: Medicine, notificationId = '') {
   return {
+    notificationId,
     medicationId: medicine.id,
     medicationName: medicine.name,
     scheduledTime: medicine.startTime,
@@ -100,7 +102,7 @@ export async function requestAlarmPermissions() {
       await (PermissionsAndroid as any).request(
         'android.permission.USE_FULL_SCREEN_INTENT',
       );
-    } catch (_) {}
+    } catch {}
   }
   if (Platform.OS === 'android' && !didRequestSpecialAlarmPermissions) {
     didRequestSpecialAlarmPermissions = true;
@@ -122,12 +124,13 @@ export async function playAlarmPreview(soundId: Medicine['alarmSound']) {
     clearTimeout(previewTimeoutId);
   }
   const sound = getAlarmSound(soundId);
-  const previewChannelId = `${NOTIFICATION_PREFIX}-preview`;
+  const previewChannelId = `${NOTIFICATION_PREFIX}-preview-v3`;
   await notifee.createChannel({
     id: previewChannelId,
     name: 'Preview',
     importance: AndroidImportance.HIGH,
     sound: sound.androidSound === 'default' ? 'default' : sound.androidSound,
+    bypassDnd: true,
   });
   await notifee.displayNotification({
     id: PREVIEW_NOTIFICATION_ID,
@@ -143,7 +146,7 @@ export async function playAlarmPreview(soundId: Medicine['alarmSound']) {
   previewTimeoutId = setTimeout(async () => {
     try {
       await notifee.cancelNotification(PREVIEW_NOTIFICATION_ID);
-    } catch (_) {}
+    } catch {}
   }, 2500);
 }
 
@@ -151,11 +154,12 @@ async function ensureAlarmChannel(medicine: Medicine, settings: AppSettings) {
   const sound = getAlarmSound(medicine.alarmSound);
 
   return notifee.createChannel({
-    id: `${NOTIFICATION_PREFIX}-v2-${sound.id}`,
+    id: `${NOTIFICATION_PREFIX}-v3-${sound.id}`,
     name: sound.channelName,
     importance: AndroidImportance.HIGH,
     vibration: settings.vibrationOnReminder,
     sound: sound.androidSound === 'default' ? 'default' : sound.androidSound,
+    bypassDnd: true,
   });
 }
 
@@ -197,14 +201,16 @@ export async function scheduleMedicineAlarms(
         },
       };
 
-      scheduleAlarmLaunch(timestamp, notificationId, createNotificationData(medicine));
+      const notificationData = createNotificationData(medicine, notificationId);
+
+      scheduleAlarmLaunch(timestamp, notificationId, notificationData);
 
       return notifee.createTriggerNotification(
         {
           id: getNotificationIds(medicine.id)[index],
           title: `⏰ ${medicine.startTime} - ${medicine.name}`,
           body: `${medicine.dosage} ${medicine.unit} - ${medicine.foodInstruction}`,
-          data: createNotificationData(medicine),
+          data: notificationData,
           android: {
             channelId,
             category: AndroidCategory.ALARM,
@@ -290,22 +296,27 @@ export async function snoozeNotification(data: Record<string, unknown>) {
   ) as Medicine['alarmSound'];
   const sound = getAlarmSound(soundId);
   const channelId = await notifee.createChannel({
-    id: `${NOTIFICATION_PREFIX}-v2-${sound.id}`,
+    id: `${NOTIFICATION_PREFIX}-v3-${sound.id}`,
     name: sound.channelName,
     importance: AndroidImportance.HIGH,
     sound: sound.androidSound === 'default' ? 'default' : sound.androidSound,
+    bypassDnd: true,
   });
 
   const snoozeNotificationId = `${NOTIFICATION_PREFIX}-${medicationId}-snooze`;
   const snoozeTimestamp = Date.now() + snoozeMinutes * 60 * 1000;
-  scheduleAlarmLaunch(snoozeTimestamp, snoozeNotificationId, {
+  const snoozeData = {
+    ...(data as NotificationData),
+    notificationId: snoozeNotificationId,
     medicationId,
     medicationName: String(data.medicationName || 'Medicamento'),
     scheduledTime: String(data.scheduledTime || ''),
     dosage: String(data.dosage || ''),
     snoozeMinutes,
     alarmSound: soundId,
-  });
+  };
+
+  scheduleAlarmLaunch(snoozeTimestamp, snoozeNotificationId, snoozeData);
 
   await notifee.createTriggerNotification(
     {
@@ -314,7 +325,7 @@ export async function snoozeNotification(data: Record<string, unknown>) {
       body: `${String(data.medicationName || 'Medicamento')} - ${String(
         data.dosage || '',
       )}`,
-      data: data as NotificationData,
+      data: snoozeData,
       android: {
         channelId,
         category: AndroidCategory.ALARM,
@@ -370,10 +381,15 @@ export async function handleAlarmEvent({ type, detail }: Event) {
 
   if (notificationId) {
     await notifee.cancelNotification(notificationId);
+    clearAlarmLaunchNotification(notificationId);
   }
 
   if (detail.pressAction?.id === ACTION_TAKEN) {
     await markNotificationDoseAsTaken(data);
+    const medicationId = String(data.medicationId || '');
+    if (medicationId) {
+      await cancelMedicineAlarms(medicationId);
+    }
   }
 
   if (detail.pressAction?.id === ACTION_SNOOZE) {

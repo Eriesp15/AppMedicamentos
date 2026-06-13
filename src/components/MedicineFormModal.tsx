@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -70,6 +70,10 @@ export function MedicineFormFields({
 }: FormFieldsProps) {
   const { styles: appStyles, palette } = useAppSettings();
   const timeParts = getTimeParts(form.startTime);
+  const [editingField, setEditingField] = useState<'hours' | 'minutes' | null>(
+    null,
+  );
+  const [editingValue, setEditingValue] = useState('');
 
   const updateTime = (hours: number, minutes: number) => {
     setForm(current => ({ ...current, startTime: formatTime(hours, minutes) }));
@@ -85,6 +89,29 @@ export function MedicineFormFields({
       part === 'minutes' ? current.minutes + amount : current.minutes;
 
     updateTime(nextHours, nextMinutes);
+  };
+
+  const commitTimeField = (field: 'hours' | 'minutes') => {
+    const cleaned = editingValue.replace(/[^0-9]/g, '').slice(0, 2);
+    const num = parseInt(cleaned, 10);
+    const current = getTimeParts(form.startTime);
+
+    if (field === 'hours') {
+      const val = isNaN(num) ? current.hours : Math.min(num, 23);
+      updateTime(val, current.minutes);
+    } else {
+      const val = isNaN(num) ? current.minutes : Math.min(num, 59);
+      updateTime(current.hours, val);
+    }
+    setEditingField(null);
+  };
+
+  const startEditing = (field: 'hours' | 'minutes') => {
+    const current = getTimeParts(form.startTime);
+    setEditingValue(
+      String(field === 'hours' ? current.hours : current.minutes),
+    );
+    setEditingField(field);
   };
 
   return (
@@ -268,9 +295,28 @@ export function MedicineFormFields({
             >
               <AppIcon icon={faPlus} color={palette.primary} size={13} />
             </TouchableOpacity>
-            <Text style={appStyles.timeStepperValue}>
-              {timeParts.hours.toString().padStart(2, '0')}
-            </Text>
+            {editingField === 'hours' ? (
+              <TextInput
+                style={[
+                  appStyles.timeStepperValue,
+                  { padding: 0, borderBottomWidth: 2, borderBottomColor: palette.primary },
+                ]}
+                value={editingValue}
+                keyboardType="number-pad"
+                maxLength={2}
+                selectTextOnFocus
+                autoFocus
+                onBlur={() => commitTimeField('hours')}
+                onSubmitEditing={() => commitTimeField('hours')}
+                onChangeText={setEditingValue}
+              />
+            ) : (
+              <TouchableOpacity onPress={() => startEditing('hours')}>
+                <Text style={appStyles.timeStepperValue}>
+                  {timeParts.hours.toString().padStart(2, '0')}
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={appStyles.timeStepButton}
               onPress={() => adjustTime('hours', -1)}
@@ -290,9 +336,28 @@ export function MedicineFormFields({
             >
               <AppIcon icon={faPlus} color={palette.primary} size={13} />
             </TouchableOpacity>
-            <Text style={appStyles.timeStepperValue}>
-              {timeParts.minutes.toString().padStart(2, '0')}
-            </Text>
+            {editingField === 'minutes' ? (
+              <TextInput
+                style={[
+                  appStyles.timeStepperValue,
+                  { padding: 0, borderBottomWidth: 2, borderBottomColor: palette.primary },
+                ]}
+                value={editingValue}
+                keyboardType="number-pad"
+                maxLength={2}
+                selectTextOnFocus
+                autoFocus
+                onBlur={() => commitTimeField('minutes')}
+                onSubmitEditing={() => commitTimeField('minutes')}
+                onChangeText={setEditingValue}
+              />
+            ) : (
+              <TouchableOpacity onPress={() => startEditing('minutes')}>
+                <Text style={appStyles.timeStepperValue}>
+                  {timeParts.minutes.toString().padStart(2, '0')}
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={appStyles.timeStepButton}
               onPress={() => adjustTime('minutes', -5)}

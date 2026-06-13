@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { DEFAULT_PROFILE, EMPTY_MEDICINE_FORM } from '../constants/data';
 import { useAppSettings } from '../context/AppSettingsContext';
@@ -16,10 +16,15 @@ import {
   UserProfile,
 } from '../types/medication';
 import {
+  deleteMedicinesFromFirestore,
   loadPersistedData,
+  mergeRemoteActivity,
+  mergeRemoteMedicines,
   persistActivity,
   persistMedicines,
   persistProfile,
+  subscribeToActivity,
+  subscribeToMedicines,
 } from '../storage/medicationStorage';
 import {
   normalizeTime,
@@ -43,6 +48,11 @@ export function useMedicationManager() {
   const [form, setForm] = useState<MedicineForm>(EMPTY_MEDICINE_FORM);
   const [hasLoadedPersistedData, setHasLoadedPersistedData] = useState(false);
 
+  const isRemoteMedicinesUpdate = useRef(false);
+  const isRemoteActivityUpdate = useRef(false);
+  const medicinesUnsubscribe = useRef<(() => void) | null>(null);
+  const activityUnsubscribe = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -62,15 +72,50 @@ export function useMedicationManager() {
   }, []);
 
   useEffect(() => {
-    if (hasLoadedPersistedData) {
+    if (!hasLoadedPersistedData) {
+      return;
+    }
+
+    medicinesUnsubscribe.current = subscribeToMedicines(
+      async remoteMedicines => {
+        isRemoteMedicinesUpdate.current = true;
+        const merged = await mergeRemoteMedicines(remoteMedicines);
+        setMedicines(merged);
+      },
+      () => {},
+    );
+
+    activityUnsubscribe.current = subscribeToActivity(
+      async remoteActivity => {
+        isRemoteActivityUpdate.current = true;
+        const merged = await mergeRemoteActivity(remoteActivity);
+        setActivity(merged);
+      },
+      () => {},
+    );
+
+    return () => {
+      if (medicinesUnsubscribe.current) {
+        medicinesUnsubscribe.current();
+      }
+      if (activityUnsubscribe.current) {
+        activityUnsubscribe.current();
+      }
+    };
+  }, [hasLoadedPersistedData]);
+
+  useEffect(() => {
+    if (hasLoadedPersistedData && !isRemoteMedicinesUpdate.current) {
       persistMedicines(medicines).catch(() => {});
     }
+    isRemoteMedicinesUpdate.current = false;
   }, [hasLoadedPersistedData, medicines]);
 
   useEffect(() => {
-    if (hasLoadedPersistedData) {
+    if (hasLoadedPersistedData && !isRemoteActivityUpdate.current) {
       persistActivity(activity).catch(() => {});
     }
+    isRemoteActivityUpdate.current = false;
   }, [activity, hasLoadedPersistedData]);
 
   useEffect(() => {
@@ -238,6 +283,7 @@ export function useMedicationManager() {
             current.filter(item => item.medicationId !== medicineId),
           );
           cancelMedicineAlarms(medicineId).catch(() => {});
+          deleteMedicinesFromFirestore([medicineId]).catch(() => {});
         },
       },
     ]);

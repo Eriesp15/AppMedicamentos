@@ -6,6 +6,7 @@ export function scheduleAlarmLaunch(
   timestamp: number,
   notificationId: string,
   data: {
+    notificationId?: string;
     medicationId: string;
     medicationName: string;
     scheduledTime: string;

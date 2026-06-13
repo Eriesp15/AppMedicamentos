@@ -4,13 +4,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firestoreDb } from '../config/firebase';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   setDoc,
-  writeBatch,
+  Unsubscribe,
 } from 'firebase/firestore';
 
 const USER_DOCUMENT_ID = 'defaultUser';
@@ -108,21 +110,23 @@ async function syncCollection<T extends { id: string }>(
 ) {
   await ensureUserDocument();
 
-  const batch = writeBatch(firestoreDb);
-  const snapshot = await getDocs(collectionRef);
-  const incomingIds = new Set(items.map(item => item.id));
+  await Promise.all(
+    items.map(item => setDoc(doc(collectionRef, item.id), item).catch(() => {})),
+  );
+}
 
-  snapshot.docs.forEach(item => {
-    if (!incomingIds.has(item.id)) {
-      batch.delete(item.ref);
-    }
-  });
+export async function deleteMedicinesFromFirestore(ids: string[]) {
+  const ref = medicinesCollectionRef();
+  await Promise.all(
+    ids.map(id => deleteDoc(doc(ref, id)).catch(() => {})),
+  );
+}
 
-  items.forEach(item => {
-    batch.set(doc(collectionRef, item.id), item);
-  });
-
-  await batch.commit();
+export async function deleteActivitiesFromFirestore(ids: string[]) {
+  const ref = activityCollectionRef();
+  await Promise.all(
+    ids.map(id => deleteDoc(doc(ref, id)).catch(() => {})),
+  );
 }
 
 async function loadRemoteData(): Promise<PersistedData> {
@@ -144,24 +148,73 @@ async function loadRemoteData(): Promise<PersistedData> {
   };
 }
 
-function hasLocalData(data: PersistedData) {
-  return Boolean(data.medicines.length || data.activity.length || data.profile);
+function mergeData(local: PersistedData, remote: PersistedData): PersistedData {
+  const remoteMedIds = new Set(remote.medicines.map(m => m.id));
+
+  const mergedMedicines = [
+    ...local.medicines.filter(m => !remoteMedIds.has(m.id)),
+    ...remote.medicines,
+  ].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  const remoteActIds = new Set(remote.activity.map(a => a.id));
+
+  const mergedActivity = [
+    ...local.activity.filter(a => !remoteActIds.has(a.id)),
+    ...remote.activity,
+  ].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+
+  return {
+    medicines: mergedMedicines,
+    activity: mergedActivity,
+    profile: remote.profile || local.profile,
+  };
 }
 
 export async function loadPersistedData() {
   const localData = await loadLocalData();
 
-  if (hasLocalData(localData)) {
-    return localData;
-  }
-
   try {
     const remoteData = await loadRemoteData();
-    await persistLocalData(remoteData);
-    return remoteData;
+    const merged = mergeData(localData, remoteData);
+    await persistLocalData(merged);
+    return merged;
   } catch {
     return localData;
   }
+}
+
+export async function mergeRemoteMedicines(remoteMedicines: Medicine[]) {
+  const local = await loadLocalData();
+  const remoteIds = new Set(remoteMedicines.map(m => m.id));
+
+  const merged = [
+    ...local.medicines.filter(m => !remoteIds.has(m.id)),
+    ...remoteMedicines,
+  ].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  await persistLocalData({ medicines: merged });
+  return merged;
+}
+
+export async function mergeRemoteActivity(remoteActivity: ActivityItem[]) {
+  const local = await loadLocalData();
+  const remoteIds = new Set(remoteActivity.map(a => a.id));
+
+  const merged = [
+    ...local.activity.filter(a => !remoteIds.has(a.id)),
+    ...remoteActivity,
+  ].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+
+  await persistLocalData({ activity: merged });
+  return merged;
 }
 
 export async function persistMedicines(medicines: Medicine[]) {
@@ -179,4 +232,36 @@ export async function persistProfile(profile: UserProfile) {
   ensureUserDocument()
     .then(() => setDoc(profileDocRef(), profile))
     .catch(() => {});
+}
+
+export function subscribeToMedicines(
+  onUpdate: (medicines: Medicine[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const q = query(medicinesCollectionRef(), orderBy('createdAt', 'desc'));
+  return onSnapshot(
+    q,
+    snapshot => {
+      const medicines = snapshot.docs.map(d =>
+        normalizeMedicine(d.data() as Medicine),
+      );
+      onUpdate(medicines);
+    },
+    onError,
+  );
+}
+
+export function subscribeToActivity(
+  onUpdate: (activity: ActivityItem[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const q = query(activityCollectionRef(), orderBy('date', 'desc'));
+  return onSnapshot(
+    q,
+    snapshot => {
+      const items = snapshot.docs.map(d => d.data() as ActivityItem);
+      onUpdate(items);
+    },
+    onError,
+  );
 }

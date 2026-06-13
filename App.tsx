@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, StatusBar, Alert, Linking } from 'react-native';
+import { StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import notifee from '@notifee/react-native';
 import { BottomTabs } from './src/components/BottomTabs';
@@ -17,6 +17,7 @@ import { SchedulesScreen } from './src/screens/SchedulesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import {
   alarmDataFromPayload,
+  cancelMedicineAlarms,
   markNotificationDoseAsTaken,
   registerForegroundAlarmHandler,
   setOnAlarmFired,
@@ -105,7 +106,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
             break;
           }
         }
-      } catch (_) {}
+      } catch {}
     }, 1000);
 
     return () => {
@@ -122,7 +123,31 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   };
 
   const closeActiveAlarm = useCallback((data?: AlarmScreenData | null) => {
-    clearAlarmLaunchNotification(data?.notificationId);
+    if (data?.notificationId) {
+      notifee.cancelNotification(data.notificationId).catch(() => {});
+      clearAlarmLaunchNotification(data.notificationId);
+    }
+
+    if (data?.medicationId) {
+      notifee
+        .getDisplayedNotifications()
+        .then(displayed =>
+          Promise.all(
+            displayed
+              .filter(
+                item =>
+                  item.notification?.data?.medicationId === data.medicationId,
+              )
+              .map(item =>
+                item.notification?.id
+                  ? notifee.cancelNotification(item.notification.id)
+                  : Promise.resolve(),
+              ),
+          ),
+        )
+        .catch(() => {});
+    }
+
     setActiveAlarm(null);
   }, []);
 
@@ -130,6 +155,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
     const medicine = medicines.find(m => m.id === data.medicationId);
     if (medicine) {
       markTaken(medicine);
+      cancelMedicineAlarms(medicine.id).catch(() => {});
     } else {
       markNotificationDoseAsTaken(data).catch(() => {});
     }
