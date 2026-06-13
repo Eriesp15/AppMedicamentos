@@ -27,6 +27,7 @@ DerivedData
 build/
 .idea
 .gradle
+.android
 local.properties
 *.iml
 *.hprof
@@ -34,12 +35,20 @@ local.properties
 *.keystore
 !debug.keystore
 .kotlin/
+android/app/build/
+android/build/
+android/app/.cxx/
+android/app/.externalNativeBuild/
+*.apk
+*.aab
 
 # node.js
 #
 node_modules/
 npm-debug.log
 yarn-error.log
+pnpm-debug.log
+*.log
 
 # fastlane
 #
@@ -62,9 +71,19 @@ yarn-error.log
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+.metro-cache/
 
 # testing
 /coverage
+.jest/
+.eslintcache
+
+# dotenv
+.env
+.env.*
+
+# Windows
+Thumbs.db
 
 # Yarn
 .yarn/*

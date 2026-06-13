@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "372237029572",
+    "project_id": "medicare-ab720",
+    "storage_bucket": "medicare-ab720.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:372237029572:android:81ec584bbd5b19f045b991",
+        "android_client_info": {
+          "package_name": "com.appmedicamentos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDX1jokCW2IDRfmSuEY5ocvEPWIlkN-i0Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

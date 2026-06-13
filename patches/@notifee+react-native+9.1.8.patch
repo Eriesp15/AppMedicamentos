@@ -1,0 +1,20 @@
+diff --git a/node_modules/@notifee/react-native/dist/index.js b/node_modules/@notifee/react-native/dist/index.js
+index 7e48a69..bbf24be 100644
+--- a/node_modules/@notifee/react-native/dist/index.js
++++ b/node_modules/@notifee/react-native/dist/index.js
+@@ -35,9 +35,9 @@ const statics = {
+ };
+ const defaultExports = Object.assign(apiModule, statics);
+ exports.default = defaultExports;
+-__exportStar(require("./types/Library"), exports);
+-__exportStar(require("./types/Notification"), exports);
+-__exportStar(require("./types/Trigger"), exports);
+-__exportStar(require("./types/NotificationIOS"), exports);
+-__exportStar(require("./types/NotificationAndroid"), exports);
++__exportStar(require("./types/Library.js"), exports);
++__exportStar(require("./types/Notification.js"), exports);
++__exportStar(require("./types/Trigger.js"), exports);
++__exportStar(require("./types/NotificationIOS.js"), exports);
++__exportStar(require("./types/NotificationAndroid.js"), exports);
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file
