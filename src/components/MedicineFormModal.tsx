@@ -272,6 +272,25 @@ export function MedicineFormFields({
             </TouchableOpacity>
           ))}
         </View>
+        {form.frequency === 'otra' && (
+          <View style={appStyles.customFrequencyRow}>
+            <TextInput
+              style={appStyles.customFrequencyInput}
+              placeholder="Ej: 6"
+              placeholderTextColor={palette.placeholderText}
+              keyboardType="number-pad"
+              maxLength={3}
+              value={form.customFrequencyHours}
+              onChangeText={value =>
+                setForm(current => ({
+                  ...current,
+                  customFrequencyHours: value.replace(/[^0-9]/g, ''),
+                }))
+              }
+            />
+            <Text style={appStyles.customFrequencyLabel}>horas</Text>
+          </View>
+        )}
       </View>
 
       <View style={appStyles.fieldCard}>

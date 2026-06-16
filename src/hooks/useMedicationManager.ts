@@ -18,10 +18,11 @@ import {
 } from '../types/medication';
 import {
   deleteMedicinesFromFirestore,
+  loadLocalData,
   loadPersistedData,
   mergeRemoteActivity,
-  mergeRemoteMedicines,
   persistActivity,
+  persistLocalData,
   persistMedicines,
   persistProfile,
   seedMedicationCatalogIfEmpty,
@@ -57,6 +58,7 @@ export function useMedicationManager() {
   const medicinesUnsubscribe = useRef<(() => void) | null>(null);
   const activityUnsubscribe = useRef<(() => void) | null>(null);
   const catalogUnsubscribe = useRef<(() => void) | null>(null);
+  const pendingDeleteIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,7 +88,23 @@ export function useMedicationManager() {
     medicinesUnsubscribe.current = subscribeToMedicines(
       async remoteMedicines => {
         isRemoteMedicinesUpdate.current = true;
-        const merged = await mergeRemoteMedicines(remoteMedicines);
+        const local = await loadLocalData();
+        const remoteIds = new Set(remoteMedicines.map(m => m.id));
+        const merged = [
+          ...local.medicines.filter(m => !remoteIds.has(m.id)),
+          ...remoteMedicines,
+        ]
+          .filter(m => !pendingDeleteIds.current.has(m.id))
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+        for (const id of pendingDeleteIds.current) {
+          if (!remoteIds.has(id)) {
+            pendingDeleteIds.current.delete(id);
+          }
+        }
+        await persistLocalData({ medicines: merged });
         setMedicines(merged);
       },
       () => {},
@@ -219,6 +237,7 @@ export function useMedicationManager() {
       unit: medicine.unit || EMPTY_MEDICINE_FORM.unit,
       dosage: medicine.dosage,
       frequency: medicine.frequency,
+      customFrequencyHours: medicine.customFrequencyHours || '',
       startTime: medicine.startTime,
       foodInstruction:
         medicine.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
@@ -291,6 +310,7 @@ export function useMedicationManager() {
         text: 'Eliminar',
         style: 'destructive',
         onPress: () => {
+          pendingDeleteIds.current.add(medicineId);
           setMedicines(current =>
             current.filter(item => item.id !== medicineId),
           );
@@ -298,7 +318,13 @@ export function useMedicationManager() {
             current.filter(item => item.medicationId !== medicineId),
           );
           cancelMedicineAlarms(medicineId).catch(() => {});
-          deleteMedicinesFromFirestore([medicineId]).catch(() => {});
+          deleteMedicinesFromFirestore([medicineId])
+            .catch(() => {})
+            .finally(() => {
+              setTimeout(() => {
+                pendingDeleteIds.current.delete(medicineId);
+              }, 3000);
+            });
         },
       },
     ]);

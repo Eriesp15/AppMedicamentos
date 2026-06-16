@@ -558,6 +558,29 @@ export function createAppStyles(
     frequencyItemTextActive: {
       color: c.primaryDark,
     },
+    customFrequencyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    customFrequencyInput: {
+      flex: 1,
+      borderWidth: cardBorder,
+      borderColor: c.line,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 8 + tx,
+      fontFamily: font,
+      fontSize: fs(15),
+      color: c.text,
+      maxWidth: 80,
+      textAlign: 'center',
+    },
+    customFrequencyLabel: {
+      fontFamily: font,
+      fontSize: fs(14),
+      color: c.textSoft,
+    },
     cancelButton: {
       backgroundColor: c.cancelButtonBg,
     },

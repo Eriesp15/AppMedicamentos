@@ -8,7 +8,7 @@ import notifee, {
   TimestampTrigger,
   TriggerType,
 } from '@notifee/react-native';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { ALARM_SOUND_OPTIONS } from '../constants/data';
 import {
   loadPersistedData,
@@ -28,7 +28,6 @@ const ACTION_TAKEN = 'medicine-taken';
 const ACTION_SNOOZE = 'medicine-snooze';
 const NOTIFICATION_PREFIX = 'medicine-alarm';
 type NotificationData = { [key: string]: string | number | object };
-let didRequestSpecialAlarmPermissions = false;
 
 function getAlarmSound(soundId: Medicine['alarmSound']) {
   return (
@@ -37,12 +36,19 @@ function getAlarmSound(soundId: Medicine['alarmSound']) {
   );
 }
 
-function getDoseOffsets(frequency: string) {
-  if (frequency === 'cada8h') {
-    return [0, 8, 16];
-  }
-  if (frequency === 'cada12h') {
-    return [0, 12];
+function getDoseOffsets(frequency: string, customFrequencyHours?: string) {
+  if (frequency === 'cada8h') return [0, 8, 16];
+  if (frequency === 'cada12h') return [0, 12];
+  if (frequency === 'otra') {
+    const hours = parseInt(customFrequencyHours || '', 10);
+    if (hours > 0) {
+      const doses: number[] = [];
+      for (let offset = 0; offset < 24; offset += hours) {
+        doses.push(offset);
+      }
+      return doses;
+    }
+    return [0];
   }
   return [0];
 }
@@ -96,16 +102,8 @@ export function alarmDataFromPayload(
 }
 
 export async function requestAlarmPermissions() {
-  await notifee.requestPermission();
-  if (Platform.OS === 'android' && Platform.Version >= 34) {
-    try {
-      await (PermissionsAndroid as any).request(
-        'android.permission.USE_FULL_SCREEN_INTENT',
-      );
-    } catch {}
-  }
-  if (Platform.OS === 'android' && !didRequestSpecialAlarmPermissions) {
-    didRequestSpecialAlarmPermissions = true;
+  await notifee.requestPermission().catch(() => {});
+  if (Platform.OS === 'android') {
     await requestSpecialAlarmPermissions().catch(() => {});
   }
 }
@@ -165,8 +163,8 @@ async function ensureAlarmChannel(medicine: Medicine, settings: AppSettings) {
 
 export async function cancelMedicineAlarms(medicineId: string) {
   const ids = getNotificationIds(medicineId);
-  await Promise.all(ids.map(id => cancelAlarmLaunch(id)));
-  await notifee.cancelTriggerNotifications(ids);
+  await Promise.all(ids.map(id => cancelAlarmLaunch(id))).catch(() => {});
+  await notifee.cancelTriggerNotifications(ids).catch(() => {});
 }
 
 export async function scheduleMedicineAlarms(
@@ -179,10 +177,10 @@ export async function scheduleMedicineAlarms(
     return;
   }
 
-  await requestAlarmPermissions();
+  await requestAlarmPermissions().catch(() => {});
   const channelId = await ensureAlarmChannel(medicine, settings);
   const sound = getAlarmSound(medicine.alarmSound);
-  const offsets = getDoseOffsets(medicine.frequency);
+  const offsets = getDoseOffsets(medicine.frequency, medicine.customFrequencyHours);
 
   await Promise.all(
     offsets.map((offset, index) => {
@@ -253,7 +251,9 @@ export async function scheduleAllMedicineAlarms(
   settings: AppSettings,
 ) {
   await Promise.all(
-    medicines.map(medicine => scheduleMedicineAlarms(medicine, settings)),
+    medicines.map(medicine =>
+      scheduleMedicineAlarms(medicine, settings).catch(() => {}),
+    ),
   );
 }
 

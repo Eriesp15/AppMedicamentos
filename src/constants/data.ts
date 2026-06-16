@@ -74,6 +74,7 @@ export const FREQUENCIES = [
   { id: 'cada12h', label: 'Cada 12 horas' },
   { id: 'cada24h', label: 'Cada 24 horas' },
   { id: 'diaria', label: '1 vez al dia' },
+  { id: 'otra', label: 'Otra' },
 ];
 
 export const INPUT_LIMITS = {
@@ -396,6 +397,7 @@ export const EMPTY_MEDICINE_FORM: MedicineForm = {
   unit: MEDICINE_UNITS[0],
   dosage: '',
   frequency: FREQUENCIES[0].id,
+  customFrequencyHours: '',
   startTime: '08:00',
   foodInstruction: FOOD_OPTIONS[0],
   notes: '',

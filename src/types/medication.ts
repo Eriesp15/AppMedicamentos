@@ -7,6 +7,7 @@ export type Medicine = {
   unit: string;
   dosage: string;
   frequency: string;
+  customFrequencyHours: string;
   startTime: string;
   foodInstruction: string;
   notes: string;
@@ -33,6 +34,7 @@ export type MedicineForm = {
   unit: string;
   dosage: string;
   frequency: string;
+  customFrequencyHours: string;
   startTime: string;
   foodInstruction: string;
   notes: string;

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   ScrollView,
   Switch,
   Text,
@@ -12,6 +13,17 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {AlarmSoundId} from '../types/settings';
+import {
+  checkOverlayPermission,
+  checkBatteryOptimization,
+  checkExactAlarmPermission,
+  checkFullScreenIntentPermission,
+  openOverlaySettings,
+  openBatteryOptimizationSettings,
+  openExactAlarmSettings,
+  openFullScreenIntentSettings,
+  openAppNotificationSettings,
+} from '../services/AlarmLaunchNative';
 
 type Props = {
   visible: boolean;
@@ -140,6 +152,69 @@ function SoundOption({
 
 export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
   const {settings, updateSettings, styles} = useAppSettings();
+  const [permOverlay, setPermOverlay] = useState(true);
+  const [permBattery, setPermBattery] = useState(true);
+  const [permExactAlarm, setPermExactAlarm] = useState(true);
+  const [permFullScreen, setPermFullScreen] = useState(true);
+
+  const checkPermissions = useCallback(() => {
+    if (Platform.OS !== 'android') return;
+    checkOverlayPermission().then(setPermOverlay).catch(() => {});
+    checkBatteryOptimization().then(setPermBattery).catch(() => {});
+    checkExactAlarmPermission().then(setPermExactAlarm).catch(() => {});
+    checkFullScreenIntentPermission().then(setPermFullScreen).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (visible) {
+      checkPermissions();
+    }
+  }, [visible, checkPermissions]);
+
+  const PermRow = ({
+    label,
+    hint,
+    granted,
+    onOpen,
+  }: {
+    label: string;
+    hint: string;
+    granted: boolean;
+    onOpen: () => void;
+  }) => (
+    <View style={[styles.settingsRow, {marginBottom: 6}]}>
+      <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+        <View style={{flex: 1, marginRight: 8}}>
+          <Text style={styles.settingsRowLabel}>{label}</Text>
+          <Text style={styles.settingsRowHint}>{hint}</Text>
+        </View>
+        <View style={{alignItems: 'flex-end', gap: 6}}>
+          <Text style={{
+            fontSize: 12,
+            fontWeight: 'bold',
+            color: granted ? '#2E7D32' : '#C62828',
+          }}>
+            {granted ? 'Concedido' : 'No concedido'}
+          </Text>
+          {!granted && (
+            <TouchableOpacity
+              onPress={onOpen}
+              style={{
+                backgroundColor: '#2855D9',
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+              }}>
+              <Text style={{color: '#FFF', fontSize: 11, fontWeight: 'bold'}}>
+                ABRIR AJUSTES
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+
   const previewSound = (sound: AlarmSoundId) => {
     const patterns: Record<AlarmSoundId, number[]> = {
       gentle: [0, 120, 80, 120],
@@ -408,6 +483,46 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
               />
             </View>
           </View>
+
+          <Text style={styles.settingsSectionTitle}>PERMISOS DE LA APP</Text>
+          <Text style={[styles.softText, {marginBottom: 8}]}>
+            Algunos permisos son necesarios para que las alarmas funcionen correctamente.
+          </Text>
+
+          <PermRow
+            label="Notificaciones"
+            hint="Permite mostrar los avisos de medicacion."
+            granted={true}
+            onOpen={openAppNotificationSettings}
+          />
+
+          <PermRow
+            label="Alarma exacta"
+            hint="Necesario para recordatorios puntuales en Android 12+."
+            granted={permExactAlarm}
+            onOpen={openExactAlarmSettings}
+          />
+
+          <PermRow
+            label="Pantalla completa"
+            hint="Muestra la alarma aunque el telefono esté bloqueado."
+            granted={permFullScreen}
+            onOpen={openFullScreenIntentSettings}
+          />
+
+          <PermRow
+            label="Superposicion (overlay)"
+            hint="Permite que la alarma se muestre sobre otras apps. Necesario en algunos dispositivos."
+            granted={permOverlay}
+            onOpen={openOverlaySettings}
+          />
+
+          <PermRow
+            label="Optimizacion de bateria"
+            hint="Evita que el sistema detenga las alarmas para ahorrar bateria."
+            granted={permBattery}
+            onOpen={openBatteryOptimizationSettings}
+          />
         </ScrollView>
       </SafeAreaView>
     </Modal>

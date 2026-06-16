@@ -51,6 +51,8 @@ function normalizeMedicine(data: Medicine): Medicine {
         : EMPTY_MEDICINE_FORM.alarmEnabled,
     alarmSound: data.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
     snoozeMinutes: data.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
+    active:
+      typeof data.active === 'boolean' ? data.active : true,
   };
 }
 
@@ -66,7 +68,7 @@ function parseJson<T>(raw: string | null, fallback: T): T {
   }
 }
 
-async function loadLocalData(): Promise<PersistedData> {
+export async function loadLocalData(): Promise<PersistedData> {
   const entries = await AsyncStorage.multiGet([
     STORAGE_KEYS.MEDICINES,
     STORAGE_KEYS.ACTIVITY,
@@ -87,7 +89,7 @@ async function loadLocalData(): Promise<PersistedData> {
   };
 }
 
-async function persistLocalData(data: Partial<PersistedData>) {
+export async function persistLocalData(data: Partial<PersistedData>) {
   const writes: [string, string][] = [];
 
   if (data.medicines) {

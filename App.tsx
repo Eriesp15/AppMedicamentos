@@ -20,6 +20,7 @@ import {
   cancelMedicineAlarms,
   markNotificationDoseAsTaken,
   registerForegroundAlarmHandler,
+  requestAlarmPermissions,
   setOnAlarmFired,
   snoozeNotification,
 } from './src/services/alarmService';
@@ -63,6 +64,14 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   const activeAlarmRef = useRef(activeAlarm);
   activeAlarmRef.current = activeAlarm;
   const handledInitialRef = useRef(false);
+
+  const initialPermRef = useRef(false);
+
+  useEffect(() => {
+    if (initialPermRef.current) return;
+    initialPermRef.current = true;
+    requestAlarmPermissions().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const unsub = registerForegroundAlarmHandler();
