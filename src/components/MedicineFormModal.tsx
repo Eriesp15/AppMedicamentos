@@ -111,6 +111,9 @@ export function MedicineFormFields({
   };
 
   const startEditing = (field: 'hours' | 'minutes') => {
+    if (editingField !== null && editingField !== field) {
+      commitTimeField(editingField);
+    }
     const current = getTimeParts(form.startTime);
     setEditingValue(
       String(field === 'hours' ? current.hours : current.minutes),
