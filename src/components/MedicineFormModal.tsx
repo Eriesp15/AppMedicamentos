@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   Switch,
   Text,
@@ -606,13 +608,17 @@ export function MedicineFormModal({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <MedicineFormFields
-              form={form}
-              setForm={setForm}
-              onCancel={onClose}
-              onSave={onSave}
-              medicationCatalog={medicationCatalog}
-            />
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+              <MedicineFormFields
+                form={form}
+                setForm={setForm}
+                onCancel={onClose}
+                onSave={onSave}
+                medicationCatalog={medicationCatalog}
+              />
+            </KeyboardAvoidingView>
           </ScrollView>
         </View>
       </View>

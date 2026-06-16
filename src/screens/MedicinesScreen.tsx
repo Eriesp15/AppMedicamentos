@@ -1,5 +1,5 @@
-import React from 'react';
-import {Alert, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import React, {useState} from 'react';
+import {Alert, ScrollView, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {
   faCheck,
   faEye,
@@ -11,7 +11,7 @@ import {
 import {AppIcon} from '../components/AppIcon';
 import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
 import {useAppSettings} from '../context/AppSettingsContext';
-import {FREQUENCIES} from '../constants/data';
+import {FREQUENCIES, MEDICINE_TYPES} from '../constants/data';
 import {Medicine} from '../types/medication';
 
 type Props = {
@@ -30,6 +30,18 @@ export function MedicinesScreen({
   onOpenSettings,
 }: Props) {
   const {palette, styles: appStyles} = useAppSettings();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('Todos');
+
+  const filteredMedicines = medicines.filter(item => {
+    const matchesSearch = item.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesFilter =
+      activeFilter === 'Todos' || item.medicineType === activeFilter;
+    return matchesSearch && matchesFilter;
+  });
+
   const showMedicineDetails = (medicine: Medicine) => {
     Alert.alert(
       medicine.name,
@@ -63,22 +75,30 @@ export function MedicinesScreen({
       <View style={appStyles.searchBox}>
         <View style={appStyles.inlineIconText}>
           <AppIcon icon={faSearch} color={palette.textSoft} size={13} />
-          <Text style={appStyles.searchText}>Buscar medicamento...</Text>
+          <TextInput
+            style={appStyles.searchText}
+            placeholder="Buscar medicamento..."
+            placeholderTextColor={palette.textSoft}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+          />
         </View>
       </View>
 
       <View style={appStyles.settingsChipRow}>
-        {['Todos', 'Pastillas', 'Jarabe', 'Inyeccion'].map((label, index) => (
+        {['Todos', ...MEDICINE_TYPES].map(label => (
           <TouchableOpacity
             key={label}
             style={[
               appStyles.settingsChip,
-              index === 0 ? appStyles.settingsChipActive : null,
-            ]}>
+              activeFilter === label ? appStyles.settingsChipActive : null,
+            ]}
+            onPress={() => setActiveFilter(label)}>
             <Text
               style={[
                 appStyles.settingsChipText,
-                index === 0 ? appStyles.settingsChipTextActive : null,
+                activeFilter === label ? appStyles.settingsChipTextActive : null,
               ]}>
               {label}
             </Text>
@@ -86,12 +106,16 @@ export function MedicinesScreen({
         ))}
       </View>
 
-      {medicines.length === 0 ? (
+      {filteredMedicines.length === 0 ? (
         <View style={appStyles.emptyCard}>
-          <Text style={appStyles.emptyTitle}>No hay medicamentos registrados</Text>
+          <Text style={appStyles.emptyTitle}>
+            {searchQuery || activeFilter !== 'Todos'
+              ? 'No se encontraron medicamentos'
+              : 'No hay medicamentos registrados'}
+          </Text>
         </View>
       ) : (
-        medicines.map(item => (
+        filteredMedicines.map(item => (
           <View key={item.id} style={appStyles.medicineCard}>
             <View style={appStyles.rowBetween}>
               <View style={appStyles.medicineIconBoxSmall}>
