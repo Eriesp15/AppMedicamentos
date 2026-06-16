@@ -493,12 +493,20 @@ export function createAppStyles(
     modalScroll: {
       flexGrow: 0,
     },
+    modalHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    modalCloseButton: {
+      padding: 4,
+    },
     modalTitle: {
       fontFamily: font,
       color: c.text,
       fontWeight: 'normal',
       fontSize: fs(20),
-      marginBottom: 12,
     },
     inputLabel: {
       fontFamily: font,

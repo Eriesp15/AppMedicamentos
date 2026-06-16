@@ -22,6 +22,7 @@ import {
   faTablets,
   faTag,
   faUtensils,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from './AppIcon';
 import { MedicationAutocomplete } from './MedicationAutocomplete';
@@ -584,9 +585,18 @@ export function MedicineFormModal({
     <Modal visible={visible} transparent animationType="slide">
       <View style={appStyles.modalOverlay}>
         <View style={appStyles.modalCard}>
-          <Text style={appStyles.modalTitle}>
-            {editingMedicineId ? 'Editar medicamento' : 'Nuevo medicamento'}
-          </Text>
+          <View style={appStyles.modalHeaderRow}>
+            <Text style={appStyles.modalTitle}>
+              {editingMedicineId ? 'Editar medicamento' : 'Nuevo medicamento'}
+            </Text>
+            <TouchableOpacity
+              style={appStyles.modalCloseButton}
+              onPress={onClose}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <AppIcon icon={faXmark} color="#999" size={22} />
+            </TouchableOpacity>
+          </View>
 
           <ScrollView
             style={appStyles.modalScroll}
