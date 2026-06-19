@@ -177,6 +177,18 @@ export async function scheduleMedicineAlarms(
     return;
   }
 
+  if (medicine.treatmentDays && medicine.createdAt) {
+    const startDate = new Date(medicine.createdAt);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + medicine.treatmentDays);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    if (today.getTime() >= endDate.getTime()) {
+      return;
+    }
+  }
+
   await requestAlarmPermissions().catch(() => {});
   const channelId = await ensureAlarmChannel(medicine, settings);
   const sound = getAlarmSound(medicine.alarmSound);

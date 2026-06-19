@@ -27,7 +27,7 @@ export function createAppStyles(
     scrollContent: {
       paddingHorizontal: 14 + (largeTouch ? 2 : 0),
       paddingTop: 12 + tx,
-      paddingBottom: 96 + tx,
+      paddingBottom: 76 + tx,
     },
     rowBetween: {
       flexDirection: 'row',
@@ -156,6 +156,7 @@ export function createAppStyles(
     },
     metricsRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 8,
       marginBottom: 14,
     },
@@ -247,6 +248,7 @@ export function createAppStyles(
     actionRow: {
       marginTop: 12,
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 8,
     },
     loggedTodayTag: {
@@ -397,6 +399,7 @@ export function createAppStyles(
       padding: 12 + tx,
       marginBottom: 10,
       flexDirection: 'row',
+      flexWrap: 'wrap',
       justifyContent: 'space-between',
       alignItems: 'center',
       ...shadow,
@@ -820,6 +823,7 @@ export function createAppStyles(
     },
     doseInfoRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 10,
       marginTop: 14,
       marginBottom: 12,
@@ -925,6 +929,7 @@ export function createAppStyles(
       padding: 14 + tx,
       marginBottom: 10,
       flexDirection: 'row',
+      flexWrap: 'wrap',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
@@ -1063,6 +1068,7 @@ export function createAppStyles(
     },
     scheduleRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 10,
       alignItems: 'center',
       marginBottom: 12,

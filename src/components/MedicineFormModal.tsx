@@ -398,6 +398,31 @@ export function MedicineFormFields({
       <View style={appStyles.fieldCard}>
         <View style={appStyles.formLabelRow}>
           <View
+            style={[appStyles.formIconCircle, { backgroundColor: '#F0F0F5' }]}
+          >
+            <AppIcon icon={faClock} color={palette.textSoft} size={18} />
+          </View>
+          <Text style={appStyles.inputLabel}>Duracion del tratamiento (dias)</Text>
+        </View>
+        <TextInput
+          style={appStyles.input}
+          placeholder="Ej: 7 (dejar vacio = sin limite)"
+          placeholderTextColor={palette.placeholderText}
+          keyboardType="number-pad"
+          maxLength={3}
+          value={form.treatmentDays}
+          onChangeText={value =>
+            setForm(current => ({
+              ...current,
+              treatmentDays: value.replace(/[^0-9]/g, ''),
+            }))
+          }
+        />
+      </View>
+
+      <View style={appStyles.fieldCard}>
+        <View style={appStyles.formLabelRow}>
+          <View
             style={[appStyles.formIconCircle, { backgroundColor: '#FFF0E6' }]}
           >
             <AppIcon icon={faUtensils} color={palette.orange} size={18} />

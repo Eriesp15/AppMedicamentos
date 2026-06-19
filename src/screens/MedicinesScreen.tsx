@@ -144,6 +144,26 @@ export function MedicinesScreen({
               Dosis: {item.dosage} {item.unit || ''}
             </Text>
             <Text style={appStyles.softText}>Hora: {item.startTime}</Text>
+            {item.treatmentDays ? (
+              (() => {
+                const start = new Date(item.createdAt);
+                const end = new Date(start);
+                end.setDate(end.getDate() + item.treatmentDays!);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                end.setHours(0, 0, 0, 0);
+                const remaining = Math.round(
+                  (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                );
+                return (
+                  <Text style={appStyles.softText}>
+                    {remaining > 0
+                      ? `Tratamiento: ${item.treatmentDays} dias (restan ${remaining})`
+                      : 'Tratamiento completado'}
+                  </Text>
+                );
+              })()
+            ) : null}
             {item.notes ? (
               <Text style={appStyles.softText} numberOfLines={3} ellipsizeMode="tail">
                 Notas: {item.notes}

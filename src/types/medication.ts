@@ -16,6 +16,7 @@ export type Medicine = {
   snoozeMinutes: SnoozeMinutes;
   createdAt: string;
   active: boolean;
+  treatmentDays?: number;
 };
 
 export type ActivityItem = {
@@ -41,6 +42,7 @@ export type MedicineForm = {
   alarmEnabled: boolean;
   alarmSound: AlarmSoundId;
   snoozeMinutes: SnoozeMinutes;
+  treatmentDays: string;
 };
 
 export type UserProfile = {

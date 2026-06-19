@@ -122,6 +122,26 @@ export function SchedulesScreen({
                         {item.medicineType || 'Medicamento'} -{' '}
                         {FREQUENCIES.find(f => f.id === item.frequency)?.label}
                       </Text>
+                      {item.treatmentDays ? (
+                        (() => {
+                          const start = new Date(item.createdAt);
+                          const end = new Date(start);
+                          end.setDate(end.getDate() + item.treatmentDays!);
+                          const now = new Date();
+                          now.setHours(0, 0, 0, 0);
+                          end.setHours(0, 0, 0, 0);
+                          const remaining = Math.round(
+                            (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                          );
+                          return (
+                            <Text style={appStyles.softText}>
+                              {remaining > 0
+                                ? `${item.treatmentDays} dias (restan ${remaining})`
+                                : 'Tratamiento completado'}
+                            </Text>
+                          );
+                        })()
+                      ) : null}
                     </View>
                     <Switch
                       value={item.alarmEnabled}

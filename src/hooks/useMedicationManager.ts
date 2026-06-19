@@ -249,6 +249,10 @@ export function useMedicationManager() {
       alarmSound: medicine.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
       snoozeMinutes:
         medicine.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
+      treatmentDays:
+        medicine.treatmentDays != null
+          ? String(medicine.treatmentDays)
+          : '',
     });
     setShowFormModal(true);
   };
@@ -262,6 +266,10 @@ export function useMedicationManager() {
       notes: sanitizeNotes(form.notes).trim(),
     };
 
+    const treatmentDaysNum = sanitizedForm.treatmentDays
+      ? parseInt(sanitizedForm.treatmentDays, 10)
+      : undefined;
+
     if (!sanitizedForm.name || !sanitizedForm.dosage.trim()) {
       Alert.alert('Campos incompletos', 'Debes ingresar nombre y dosis.');
       return;
@@ -270,7 +278,9 @@ export function useMedicationManager() {
     if (editingMedicineId) {
       setMedicines(current =>
         current.map(item =>
-          item.id === editingMedicineId ? { ...item, ...sanitizedForm } : item,
+          item.id === editingMedicineId
+            ? { ...item, ...sanitizedForm, treatmentDays: treatmentDaysNum }
+            : item,
         ),
       );
       setActivity(current =>
@@ -289,6 +299,7 @@ export function useMedicationManager() {
       const newMedicine: Medicine = {
         id: `${Date.now()}`,
         ...sanitizedForm,
+        treatmentDays: treatmentDaysNum,
         createdAt: new Date().toISOString(),
         active: true,
       };

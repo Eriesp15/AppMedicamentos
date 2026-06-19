@@ -404,6 +404,7 @@ export const EMPTY_MEDICINE_FORM: MedicineForm = {
   alarmEnabled: true,
   alarmSound: 'default',
   snoozeMinutes: 10,
+  treatmentDays: '',
 };
 
 export const TIPS = [

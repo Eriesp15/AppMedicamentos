@@ -231,7 +231,7 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={[styles.scrollContent, {paddingBottom: 32}]}>
           <View style={styles.settingsCloseBar}>
             <Text style={styles.settingsTitleMain}>Ajustes</Text>

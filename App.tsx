@@ -188,7 +188,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
           translucent={false}
         />
       )}
-      <SafeAreaView edges={['top']} style={styles.container}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
         {activeTab === 'home' && (
           <HomeScreen
             medicines={medicines}
