@@ -36,7 +36,7 @@ export function MedicationAutocomplete({
       return [];
     }
     const results = medicationCatalog.filter(med =>
-      med.name.toLowerCase().includes(query),
+      med.name.toLowerCase().startsWith(query),
     );
     return results.slice(0, 8);
   }, [form.name, medicationCatalog]);
