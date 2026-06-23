@@ -6,6 +6,7 @@ export function createAppStyles(
   fontScale: number,
   largeTouch: boolean,
   highVisibilityBorders: boolean,
+  bottomInset: number = 0,
 ) {
   const fs = (n: number) => Math.round(n * fontScale);
   const tx = largeTouch ? 5 : 0;
@@ -27,7 +28,7 @@ export function createAppStyles(
     scrollContent: {
       paddingHorizontal: 14 + (largeTouch ? 2 : 0),
       paddingTop: 12 + tx,
-      paddingBottom: 76 + tx,
+      paddingBottom: 76 + tx + bottomInset,
     },
     rowBetween: {
       flexDirection: 'row',
@@ -429,7 +430,7 @@ export function createAppStyles(
       position: 'absolute',
       left: 8,
       right: 8,
-      bottom: 6,
+      bottom: 6 + bottomInset,
       flexDirection: 'row',
       backgroundColor: c.tabBarBg,
       borderRadius: 18,
@@ -491,6 +492,7 @@ export function createAppStyles(
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
       padding: 16 + tx,
+      paddingBottom: 16 + tx + bottomInset,
       maxHeight: '90%',
     },
     modalScroll: {

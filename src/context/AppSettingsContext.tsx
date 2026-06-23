@@ -15,6 +15,7 @@ import {
   DEFAULT_APP_SETTINGS,
   FontSizePreset,
 } from '../types/settings';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const FONT_SCALE: Record<FontSizePreset, number> = {
   normal: 1,
@@ -35,6 +36,7 @@ const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
 export function AppSettingsProvider({children}: {children: React.ReactNode}) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     let cancelled = false;
@@ -74,12 +76,14 @@ export function AppSettingsProvider({children}: {children: React.ReactNode}) {
         fontScale,
         settings.largeTouchTargets,
         settings.highVisibilityBorders,
+        insets.bottom,
       ),
     [
       palette,
       fontScale,
       settings.largeTouchTargets,
       settings.highVisibilityBorders,
+      insets.bottom,
     ],
   );
 

@@ -179,16 +179,12 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
 
   return (
     <>
-      {activeAlarm ? (
-        <StatusBar hidden />
-      ) : (
-        <StatusBar
-          barStyle={statusBarStyle}
-          backgroundColor={statusBarBg}
-          translucent={false}
-        />
-      )}
-      <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      <StatusBar
+        barStyle={activeAlarm ? 'light-content' : statusBarStyle}
+        backgroundColor={activeAlarm ? '#1A1A2E' : statusBarBg}
+        translucent={false}
+      />
+      <SafeAreaView edges={['top']} style={styles.container}>
         {activeTab === 'home' && (
           <HomeScreen
             medicines={medicines}

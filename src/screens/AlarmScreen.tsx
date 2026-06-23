@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Text, TouchableOpacity, View, Vibration, Dimensions } from 'react-native';
+import { Text, TouchableOpacity, View, Vibration } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ALARM_SOUND_OPTIONS } from '../constants/data';
 import { AlarmSoundId } from '../types/medication';
 
@@ -20,8 +21,6 @@ type Props = {
   onSnooze: (data: AlarmScreenData) => void;
 };
 
-const { width, height } = Dimensions.get('window');
-
 export function AlarmScreen({ alarm, onDismiss, onTaken, onSnooze }: Props) {
   useEffect(() => {
     if (alarm) {
@@ -40,20 +39,21 @@ export function AlarmScreen({ alarm, onDismiss, onTaken, onSnooze }: Props) {
         position: 'absolute',
         top: 0,
         left: 0,
-        width,
-        height,
+        right: 0,
+        bottom: 0,
         backgroundColor: '#1A1A2E',
         zIndex: 9999,
         elevation: 9999,
       }}
     >
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32,
-        paddingTop: 60,
-      }}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 32,
+          paddingTop: 20,
+        }}>
         <Text style={{
           fontSize: 56,
           fontWeight: '300',
@@ -155,6 +155,7 @@ export function AlarmScreen({ alarm, onDismiss, onTaken, onSnooze }: Props) {
           </Text>
         </TouchableOpacity>
       </View>
+      </SafeAreaView>
     </View>
   );
 }
