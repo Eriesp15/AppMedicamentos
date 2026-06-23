@@ -21,7 +21,7 @@ import {
   scheduleAlarmLaunch,
   cancelAlarmLaunch,
   clearAlarmLaunchNotification,
-  requestSpecialAlarmPermissions,
+  checkExactAlarmPermission,
 } from './AlarmLaunchNative';
 
 const ACTION_TAKEN = 'medicine-taken';
@@ -103,9 +103,6 @@ export function alarmDataFromPayload(
 
 export async function requestAlarmPermissions() {
   await notifee.requestPermission().catch(() => {});
-  if (Platform.OS === 'android') {
-    await requestSpecialAlarmPermissions().catch(() => {});
-  }
 }
 
 let previewTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -170,7 +167,9 @@ export async function cancelMedicineAlarms(medicineId: string) {
 export async function scheduleMedicineAlarms(
   medicine: Medicine,
   settings: AppSettings,
+  shouldAbort?: () => boolean,
 ) {
+  if (shouldAbort?.()) return;
   await cancelMedicineAlarms(medicine.id);
 
   if (!medicine.active || !medicine.alarmEnabled) {
@@ -189,13 +188,20 @@ export async function scheduleMedicineAlarms(
     }
   }
 
+  if (shouldAbort?.()) return;
   await requestAlarmPermissions().catch(() => {});
+  if (shouldAbort?.()) return;
   const channelId = await ensureAlarmChannel(medicine, settings);
   const sound = getAlarmSound(medicine.alarmSound);
   const offsets = getDoseOffsets(medicine.frequency, medicine.customFrequencyHours);
 
+  if (shouldAbort?.()) return;
+  const hasExactPermission = Platform.OS === 'android' ? await checkExactAlarmPermission() : true;
+
+  if (shouldAbort?.()) return;
   await Promise.all(
-    offsets.map((offset, index) => {
+    offsets.map(async (offset, index) => {
+      if (shouldAbort?.()) return;
       const timestamp = getNextDailyTimestamp(
         medicine.startTime,
         offset,
@@ -206,16 +212,20 @@ export async function scheduleMedicineAlarms(
         type: TriggerType.TIMESTAMP,
         timestamp,
         repeatFrequency: RepeatFrequency.DAILY,
-        alarmManager: {
-          type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
-        },
+        ...(hasExactPermission && {
+          alarmManager: {
+            type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
+          },
+        }),
       };
 
       const notificationData = createNotificationData(medicine, notificationId);
 
+      if (shouldAbort?.()) return;
       scheduleAlarmLaunch(timestamp, notificationId, notificationData);
 
-      return notifee.createTriggerNotification(
+      if (shouldAbort?.()) return;
+      await notifee.createTriggerNotification(
         {
           id: getNotificationIds(medicine.id)[index],
           title: `⏰ ${medicine.startTime} - ${medicine.name}`,
@@ -261,10 +271,12 @@ export async function scheduleMedicineAlarms(
 export async function scheduleAllMedicineAlarms(
   medicines: Medicine[],
   settings: AppSettings,
+  shouldAbort?: () => boolean,
 ) {
+  if (shouldAbort?.()) return;
   await Promise.all(
     medicines.map(medicine =>
-      scheduleMedicineAlarms(medicine, settings).catch(() => {}),
+      scheduleMedicineAlarms(medicine, settings, shouldAbort).catch(() => {}),
     ),
   );
 }

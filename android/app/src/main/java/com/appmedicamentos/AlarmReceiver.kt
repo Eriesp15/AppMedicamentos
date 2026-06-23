@@ -2,7 +2,6 @@ package com.appmedicamentos
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -34,7 +33,7 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(context.applicationInfo.icon)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Alarma de medicamento")
             .setContentText("${intent.getStringExtra("medicationName") ?: "Medicamento"} - ${intent.getStringExtra("dosage") ?: ""}")
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -63,8 +62,6 @@ class AlarmReceiver : BroadcastReceiver() {
         } catch (_: Exception) {
             // The full-screen notification above is the supported background launch path.
         }
-
-        scheduleNextDailyAlarm(context, intent, notificationId, activityIntent)
     }
 
     private fun createAlarmActivityIntent(context: Context, source: Intent): Intent {
@@ -141,47 +138,4 @@ class AlarmReceiver : BroadcastReceiver() {
         wakeLock.acquire(10_000)
     }
 
-    private fun scheduleNextDailyAlarm(
-        context: Context,
-        source: Intent,
-        notificationId: String,
-        activityIntent: Intent
-    ) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val nextTimestamp = System.currentTimeMillis() + 24 * 60 * 60 * 1000
-        val receiverIntent = Intent(context, AlarmReceiver::class.java).apply {
-            putExtra("notificationId", notificationId)
-            putExtra("medicationId", source.getStringExtra("medicationId"))
-            putExtra("medicationName", source.getStringExtra("medicationName"))
-            putExtra("scheduledTime", source.getStringExtra("scheduledTime"))
-            putExtra("dosage", source.getStringExtra("dosage"))
-            putExtra("snoozeMinutes", source.getIntExtra("snoozeMinutes", 10))
-            putExtra("alarmSound", source.getStringExtra("alarmSound"))
-        }
-        val receiverPendingIntent = PendingIntent.getBroadcast(
-            context,
-            ("alarm_launch_$notificationId").hashCode(),
-            receiverIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val showPendingIntent = PendingIntent.getActivity(
-            context,
-            ("alarm_show_$notificationId").hashCode(),
-            activityIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            alarmManager.setAlarmClock(
-                AlarmManager.AlarmClockInfo(nextTimestamp, showPendingIntent),
-                receiverPendingIntent
-            )
-        } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                nextTimestamp,
-                receiverPendingIntent
-            )
-        }
-    }
 }

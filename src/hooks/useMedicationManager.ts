@@ -59,6 +59,7 @@ export function useMedicationManager() {
   const activityUnsubscribe = useRef<(() => void) | null>(null);
   const catalogUnsubscribe = useRef<(() => void) | null>(null);
   const pendingDeleteIds = useRef<Set<string>>(new Set());
+  const schedulingGeneration = useRef(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -158,9 +159,9 @@ export function useMedicationManager() {
   }, [hasLoadedPersistedData, profile]);
 
   useEffect(() => {
-    if (hasLoadedPersistedData) {
-      scheduleAllMedicineAlarms(medicines, settings).catch(() => {});
-    }
+    if (!hasLoadedPersistedData) return;
+    const gen = ++schedulingGeneration.current;
+    scheduleAllMedicineAlarms(medicines, settings, () => schedulingGeneration.current !== gen).catch(() => {});
   }, [hasLoadedPersistedData, medicines, settings]);
 
   const todayKey = useMemo(() => new Date().toDateString(), []);

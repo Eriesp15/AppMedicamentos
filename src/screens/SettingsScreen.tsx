@@ -10,6 +10,7 @@ import {
   Vibration,
   View,
 } from 'react-native';
+import notifee, {AuthorizationStatus} from '@notifee/react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {AlarmSoundId} from '../types/settings';
@@ -152,6 +153,7 @@ function SoundOption({
 
 export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
   const {settings, updateSettings, styles} = useAppSettings();
+  const [permNotifications, setPermNotifications] = useState(true);
   const [permOverlay, setPermOverlay] = useState(true);
   const [permBattery, setPermBattery] = useState(true);
   const [permExactAlarm, setPermExactAlarm] = useState(true);
@@ -159,6 +161,9 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
 
   const checkPermissions = useCallback(() => {
     if (Platform.OS !== 'android') return;
+    notifee.getNotificationSettings().then(sett => {
+      setPermNotifications(sett.authorizationStatus >= AuthorizationStatus.AUTHORIZED);
+    }).catch(() => {});
     checkOverlayPermission().then(setPermOverlay).catch(() => {});
     checkBatteryOptimization().then(setPermBattery).catch(() => {});
     checkExactAlarmPermission().then(setPermExactAlarm).catch(() => {});
@@ -492,7 +497,7 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
           <PermRow
             label="Notificaciones"
             hint="Permite mostrar los avisos de medicacion."
-            granted={true}
+            granted={permNotifications}
             onOpen={openAppNotificationSettings}
           />
 

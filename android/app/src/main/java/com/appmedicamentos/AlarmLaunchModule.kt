@@ -37,14 +37,21 @@ class AlarmLaunchModule(reactContext: ReactApplicationContext) :
         val context = reactApplicationContext
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+        val medicationId = if (data.hasKey("medicationId")) data.getString("medicationId") else ""
+        val medicationName = if (data.hasKey("medicationName")) data.getString("medicationName") else "Medicamento"
+        val scheduledTime = if (data.hasKey("scheduledTime")) data.getString("scheduledTime") else ""
+        val dosage = if (data.hasKey("dosage")) data.getString("dosage") else ""
+        val snoozeMinutes = if (data.hasKey("snoozeMinutes")) data.getInt("snoozeMinutes") else 10
+        val alarmSound = if (data.hasKey("alarmSound")) data.getString("alarmSound") else "default"
+
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("notificationId", notificationId)
-            putExtra("medicationId", data.getString("medicationId"))
-            putExtra("medicationName", data.getString("medicationName"))
-            putExtra("scheduledTime", data.getString("scheduledTime"))
-            putExtra("dosage", data.getString("dosage"))
-            putExtra("snoozeMinutes", data.getInt("snoozeMinutes"))
-            putExtra("alarmSound", data.getString("alarmSound"))
+            putExtra("medicationId", medicationId)
+            putExtra("medicationName", medicationName)
+            putExtra("scheduledTime", scheduledTime)
+            putExtra("dosage", dosage)
+            putExtra("snoozeMinutes", snoozeMinutes)
+            putExtra("alarmSound", alarmSound)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -58,12 +65,12 @@ class AlarmLaunchModule(reactContext: ReactApplicationContext) :
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("notificationId", notificationId)
-            putExtra("medicationId", data.getString("medicationId"))
-            putExtra("medicationName", data.getString("medicationName"))
-            putExtra("scheduledTime", data.getString("scheduledTime"))
-            putExtra("dosage", data.getString("dosage"))
-            putExtra("snoozeMinutes", data.getInt("snoozeMinutes"))
-            putExtra("alarmSound", data.getString("alarmSound"))
+            putExtra("medicationId", medicationId)
+            putExtra("medicationName", medicationName)
+            putExtra("scheduledTime", scheduledTime)
+            putExtra("dosage", dosage)
+            putExtra("snoozeMinutes", snoozeMinutes)
+            putExtra("alarmSound", alarmSound)
             putExtra("fromNativeAlarm", true)
         }
         val showIntent = PendingIntent.getActivity(
@@ -73,17 +80,44 @@ class AlarmLaunchModule(reactContext: ReactApplicationContext) :
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            alarmManager.setAlarmClock(
-                AlarmManager.AlarmClockInfo(timestamp.toLong(), showIntent),
-                pendingIntent
-            )
-        } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                timestamp.toLong(),
-                pendingIntent
-            )
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setAlarmClock(
+                        AlarmManager.AlarmClockInfo(timestamp.toLong(), showIntent),
+                        pendingIntent
+                    )
+                } else {
+                    // Fallback to inexact set() if we cannot schedule exact alarms
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        timestamp.toLong(),
+                        pendingIntent
+                    )
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                alarmManager.setAlarmClock(
+                    AlarmManager.AlarmClockInfo(timestamp.toLong(), showIntent),
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    timestamp.toLong(),
+                    pendingIntent
+                )
+            }
+        } catch (e: SecurityException) {
+            // Safe fallback to inexact RTC_WAKEUP alarm
+            try {
+                alarmManager.set(
+                    AlarmManager.RTC_WAKEUP,
+                    timestamp.toLong(),
+                    pendingIntent
+                )
+            } catch (_: Exception) {}
+        } catch (e: Exception) {
+            // General catch-all to prevent app crashes from background scheduling
         }
     }
 
