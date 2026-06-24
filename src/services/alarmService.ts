@@ -65,14 +65,26 @@ function getNextDailyTimestamp(
   advanceMinutes: number,
 ) {
   const { hours, minutes } = getTimeParts(startTime);
-  const next = new Date();
-  next.setHours(hours + offsetHours, minutes - advanceMinutes, 0, 0);
 
-  if (next.getTime() <= Date.now()) {
-    next.setDate(next.getDate() + 1);
+  const actual = new Date();
+  actual.setHours(hours + offsetHours, minutes, 0, 0);
+
+  const reminder = new Date();
+  reminder.setHours(hours + offsetHours, minutes - advanceMinutes, 0, 0);
+
+  const now = Date.now();
+
+  if (reminder.getTime() > now) {
+    return reminder.getTime();
   }
 
-  return next.getTime();
+  if (actual.getTime() > now) {
+    return actual.getTime();
+  }
+
+  const tomorrowReminder = new Date(reminder.getTime());
+  tomorrowReminder.setDate(tomorrowReminder.getDate() + 1);
+  return tomorrowReminder.getTime();
 }
 
 function createNotificationData(medicine: Medicine, notificationId = '') {
@@ -159,7 +171,10 @@ async function ensureAlarmChannel(medicine: Medicine, settings: AppSettings) {
 }
 
 export async function cancelMedicineAlarms(medicineId: string) {
-  const ids = getNotificationIds(medicineId);
+  const ids = [
+    ...getNotificationIds(medicineId),
+    `${NOTIFICATION_PREFIX}-${medicineId}-snooze`,
+  ];
   await Promise.all(ids.map(id => cancelAlarmLaunch(id))).catch(() => {});
   await notifee.cancelTriggerNotifications(ids).catch(() => {});
 }

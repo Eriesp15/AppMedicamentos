@@ -102,6 +102,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                setBypassDnd(true)
                 val soundUri = if (soundName == "default") {
                     Settings.System.DEFAULT_ALARM_ALERT_URI
                 } else {
