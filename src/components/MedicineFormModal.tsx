@@ -71,7 +71,7 @@ export function MedicineFormFields({
   setForm,
   onSave,
   onCancel,
-  saveLabel = 'Guardar medicamento',
+  saveLabel = 'Guardar',
   medicationCatalog,
 }: FormFieldsProps) {
   const { styles: appStyles, palette } = useAppSettings();
