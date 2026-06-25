@@ -258,9 +258,19 @@ export function HomeScreen({
     year: 'numeric',
   }).format(new Date());
 
-  const sortedMedicines = [...medicines].sort((a, b) =>
-    a.startTime.localeCompare(b.startTime),
-  );
+  const getDoseDiff = (timeStr: string) => {
+    const [h, min] = timeStr.split(':').map(Number);
+    const medicineMinutes = h * 60 + min;
+    let diff = medicineMinutes - currentMinutes;
+    if (diff < 0) {
+      diff += 1440; // wrap around to tomorrow
+    }
+    return diff;
+  };
+
+  const sortedMedicines = [...medicines].sort((a, b) => {
+    return getDoseDiff(a.startTime) - getDoseDiff(b.startTime);
+  });
 
   const handleCardPress = (item: Medicine) => {
     const status = todayStatusByMedication[item.id];
