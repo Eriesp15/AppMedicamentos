@@ -18,7 +18,6 @@ import {
 } from '../types/medication';
 import {
   deleteMedicinesFromFirestore,
-  loadLocalData,
   loadPersistedData,
   mergeRemoteActivity,
   persistActivity,
@@ -81,30 +80,19 @@ export function useMedicationManager() {
     loadData();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     if (!hasLoadedPersistedData) {
       return;
     }
 
     medicinesUnsubscribe.current = subscribeToMedicines(
       async remoteMedicines => {
-        isRemoteMedicinesUpdate.current = true;
-        const local = await loadLocalData();
-        const remoteIds = new Set(remoteMedicines.map(m => m.id));
-        const merged = [
-          ...local.medicines.filter(m => !remoteIds.has(m.id)),
-          ...remoteMedicines,
-        ]
+        const merged = remoteMedicines
           .filter(m => !pendingDeleteIds.current.has(m.id))
           .sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
-        for (const id of pendingDeleteIds.current) {
-          if (!remoteIds.has(id)) {
-            pendingDeleteIds.current.delete(id);
-          }
-        }
         await persistLocalData({ medicines: merged });
         setMedicines(merged);
       },
@@ -118,7 +106,6 @@ export function useMedicationManager() {
 
     activityUnsubscribe.current = subscribeToActivity(
       async remoteActivity => {
-        isRemoteActivityUpdate.current = true;
         const merged = await mergeRemoteActivity(remoteActivity);
         setActivity(merged);
       },
@@ -139,18 +126,12 @@ export function useMedicationManager() {
   }, [hasLoadedPersistedData]);
 
   useEffect(() => {
-    if (hasLoadedPersistedData && !isRemoteMedicinesUpdate.current) {
-      persistMedicines(medicines).catch(() => {});
-    }
-    isRemoteMedicinesUpdate.current = false;
-  }, [hasLoadedPersistedData, medicines]);
+    persistMedicines(medicines).catch(() => {});
+  }, [medicines]);
 
   useEffect(() => {
-    if (hasLoadedPersistedData && !isRemoteActivityUpdate.current) {
-      persistActivity(activity).catch(() => {});
-    }
-    isRemoteActivityUpdate.current = false;
-  }, [activity, hasLoadedPersistedData]);
+    persistActivity(activity).catch(() => {});
+  }, [activity]);
 
   useEffect(() => {
     if (hasLoadedPersistedData) {
@@ -315,32 +296,33 @@ export function useMedicationManager() {
     }
   };
 
-  const deleteMedicine = (medicineId: string) => {
-    Alert.alert('Eliminar medicamento', 'Esta accion no se puede deshacer.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: () => {
-          pendingDeleteIds.current.add(medicineId);
-          setMedicines(current =>
-            current.filter(item => item.id !== medicineId),
-          );
-          setActivity(current =>
-            current.filter(item => item.medicationId !== medicineId),
-          );
-          cancelMedicineAlarms(medicineId).catch(() => {});
-          deleteMedicinesFromFirestore([medicineId])
-            .catch(() => {})
-            .finally(() => {
-              setTimeout(() => {
-                pendingDeleteIds.current.delete(medicineId);
-              }, 3000);
-            });
-        },
-      },
-    ]);
-  };
+   const deleteMedicine = (medicineId: string) => {
+     Alert.alert('Eliminar medicamento', 'Esta accion no se puede deshacer.', [
+       { text: 'Cancelar', style: 'cancel' },
+       {
+         text: 'Eliminar',
+         style: 'destructive',
+         onPress: () => {
+           const deletedAt = Date.now();
+           pendingDeleteIds.current.add(medicineId);
+           setMedicines(current =>
+             current.filter(item => item.id !== medicineId),
+           );
+           setActivity(current =>
+             current.filter(item => item.medicationId !== medicineId),
+           );
+           cancelMedicineAlarms(medicineId).catch(() => {});
+           deleteMedicinesFromFirestore([medicineId])
+             .catch(() => {})
+             .finally(() => {
+               setTimeout(() => {
+                 pendingDeleteIds.current.delete(medicineId);
+               }, 3000);
+             });
+         },
+       },
+     ]);
+   };
 
   const updateMedicineAlarm = (
     medicineId: string,
