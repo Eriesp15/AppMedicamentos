@@ -34,6 +34,7 @@ export function ProfileScreen({
   onOpenSettings,
 }: Props) {
   const { styles: appStyles, palette } = useAppSettings();
+
   return (
     <KeyboardAvoidingView style={{flex: 1}} behavior="padding">
       <ScrollView contentContainerStyle={appStyles.scrollContent}>

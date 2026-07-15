@@ -103,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         showPlayServicesUpdateDialog: true,
       });
       const response = await GoogleSignin.signIn();
+      console.log(JSON.stringify(response, null, 2));
       if (response.type !== 'success' || !response.data) {
         return;
       }

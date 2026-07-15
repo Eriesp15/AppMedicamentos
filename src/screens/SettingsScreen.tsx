@@ -13,6 +13,7 @@ import {
 import notifee, {AuthorizationStatus} from '@notifee/react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAppSettings} from '../context/AppSettingsContext';
+import {useAuth} from '../context/AuthContext';
 import {AlarmSoundId} from '../types/settings';
 import {
   checkOverlayPermission,
@@ -152,7 +153,8 @@ function SoundOption({
 }
 
 export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
-  const {settings, updateSettings, styles} = useAppSettings();
+  const {settings, updateSettings, styles, palette} = useAppSettings();
+  const {user, signOut} = useAuth();
   const [permNotifications, setPermNotifications] = useState(true);
   const [permOverlay, setPermOverlay] = useState(true);
   const [permBattery, setPermBattery] = useState(true);
@@ -219,6 +221,23 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
       </View>
     </View>
   );
+
+  const handleSignOutPress = useCallback(() => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Estás seguro que quieres salir? Tus datos quedaran guardados en la nube.',
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: () => {
+            signOut();
+          },
+        },
+      ],
+    );
+  }, [signOut]);
 
   const previewSound = (sound: AlarmSoundId) => {
     const patterns: Record<AlarmSoundId, number[]> = {
@@ -528,6 +547,32 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
             granted={permBattery}
             onOpen={openBatteryOptimizationSettings}
           />
+
+          <Text style={styles.settingsSectionTitle}>CUENTA</Text>
+          {user?.email && (
+            <View style={styles.settingsRow}>
+              <Text style={styles.settingsRowLabel}>Sesion iniciada como</Text>
+              <Text style={styles.settingsRowHint}>{user.email}</Text>
+              {user.name ? (
+                <Text style={[styles.settingsRowHint, {marginTop: 4}]}>
+                  {user.name}
+                </Text>
+              ) : null}
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleSignOutPress}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesion">
+            <Text style={[styles.settingsRowLabel, {color: palette.red}]}>
+              Cerrar sesion
+            </Text>
+            <Text style={styles.settingsRowHint}>
+              Salir de tu cuenta en este dispositivo.
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </Modal>
