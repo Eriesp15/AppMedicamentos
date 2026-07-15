@@ -98,23 +98,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     setLoading(true);
+    // Track whether we successfully completed Google Sign-In so we can clean
+    // up that partial session if a later step (getTokens / Firebase) fails.
+    // Without this, retries can reuse stale tokens and reproduce the same
+    // "accessToken cannot be empty" error.
+    let googleSessionCreated = false;
     try {
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
       const response = await GoogleSignin.signIn();
-      console.log(JSON.stringify(response, null, 2));
-      if (response.type !== 'success' || !response.data) {
+      if (__DEV__) {
+        console.log(
+          'GoogleSignin.signIn() result:',
+          JSON.stringify(response, null, 2),
+        );
+      }
+      if (response.type !== 'success') {
         return;
       }
-      const googleIdToken = response.data.idToken;
-      if (!googleIdToken) {
+      googleSessionCreated = true;
+      // @react-native-google-signin/google-signin v16 cambió el contrato de
+      // signIn(): ya no entrega el accessToken junto al idToken; hay que
+      // pedirlo explícitamente con getTokens(). Si creamos la credencial sólo
+      // con el idToken, @react-native-firebase/auth 25.x lanza
+      // "accessToken cannot be empty" porque internamente exige ambos.
+      const tokens = await GoogleSignin.getTokens();
+      if (__DEV__) {
+        console.log(
+          'GoogleSignin.getTokens() result:',
+          JSON.stringify(tokens, null, 2),
+        );
+      }
+      const { idToken, accessToken } = tokens;
+      if (!idToken) {
         throw new Error('Google Sign-In no devolvió un idToken.');
       }
-      // The integration with Firebase Auth is exactly what the docs show:
-      // exchange the Google idToken for a Firebase credential, then
-      // signInWithCredential binds the user to a stable Firebase UID.
-      const credential = auth.GoogleAuthProvider.credential(googleIdToken);
+      if (!accessToken) {
+        throw new Error(
+          'Google Sign-In no devolvió un accessToken. Reintenta o revisa la configuración nativa (GoogleService-Info.plist / google-services.json).',
+        );
+      }
+      // Construimos la credencial con ambos tokens para que
+      // signInWithCredential pueda asociar al usuario con un UID estable en
+      // Firebase Auth.
+      const credential = auth.GoogleAuthProvider.credential(
+        idToken,
+        accessToken,
+      );
       await auth().signInWithCredential(credential);
       // onAuthStateChanged will fire and update state; nothing else to do.
     } catch (error) {
@@ -134,6 +165,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           default:
             break;
+        }
+      }
+      // If we created a Google session but failed before binding it to
+      // Firebase, tear it down so the next retry starts from a clean slate.
+      if (googleSessionCreated) {
+        try {
+          await GoogleSignin.signOut();
+        } catch (cleanupError) {
+          console.error(
+            'Error limpiando sesión de Google tras fallo:',
+            cleanupError,
+          );
         }
       }
       const message =
