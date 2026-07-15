@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "729177671885-87qgui1d90gnc6oj4dtsav2rnp93s61b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appmedicamentos",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "729177671885-dup8nr99r2cec96q05156gip3n96p25q.apps.googleusercontent.com",
           "client_type": 3
         }

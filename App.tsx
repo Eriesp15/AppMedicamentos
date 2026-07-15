@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StatusBar } from 'react-native';
+import { ActivityIndicator, StatusBar, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import notifee from '@notifee/react-native';
 import { BottomTabs } from './src/components/BottomTabs';
@@ -8,6 +8,8 @@ import {
   AppSettingsProvider,
   useAppSettings,
 } from './src/context/AppSettingsContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { LoginScreen } from './src/screens/LoginScreen';
 import { useMedicationManager } from './src/hooks/useMedicationManager';
 import { AddMedicineScreen } from './src/screens/AddMedicineScreen';
 import { AlarmScreen, AlarmScreenData } from './src/screens/AlarmScreen';
@@ -26,9 +28,6 @@ import {
 } from './src/services/alarmService';
 import { clearAlarmLaunchNotification } from './src/services/AlarmLaunchNative';
 import { TrackingScreen } from './src/screens/TrackingScreen';
-import { LoginScreen } from './src/screens/LoginScreen';
-import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 type InitialAlarmProps = Partial<AlarmScreenData> & {
   fromNativeAlarm?: boolean;
@@ -274,14 +273,34 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   );
 }
 
-function MainNavigator({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
-  const { isAuthenticated, loading } = useAuth();
+function AuthGate({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
+  const { user, initializing } = useAuth();
+  const { palette } = useAppSettings();
 
-  if (loading) {
-    return null;
+  if (initializing) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: palette.bg,
+        }}>
+        <ActivityIndicator size="large" color={palette.primary} />
+        <Text
+          style={{
+            marginTop: 12,
+            fontFamily: 'Outfit',
+            color: palette.textSoft,
+            fontSize: 13,
+          }}>
+          Cargando sesión…
+        </Text>
+      </View>
+    );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return <LoginScreen />;
   }
 
@@ -289,19 +308,11 @@ function MainNavigator({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
 }
 
 function App(props: InitialAlarmProps) {
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId:
-        '372237029572-hf4qesltv7rrvsutdch9tldr7knuokp0.apps.googleusercontent.com',
-      offlineAccess: false,
-    });
-  }, []);
-
   return (
     <SafeAreaProvider>
       <AppSettingsProvider>
         <AuthProvider>
-          <MainNavigator initialAlarm={props} />
+          <AuthGate initialAlarm={props} />
         </AuthProvider>
       </AppSettingsProvider>
     </SafeAreaProvider>

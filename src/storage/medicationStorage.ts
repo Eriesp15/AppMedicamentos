@@ -1,19 +1,23 @@
 import { ActivityItem, Medicine, MedicationSuggestion, UserProfile } from '../types/medication';
 import { EMPTY_MEDICINE_FORM, MEDICATION_DATABASE, STORAGE_KEYS } from '../constants/data';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { firestoreDb } from '../config/firebase';
 import {
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
+  getFirestore,
   onSnapshot,
   orderBy,
   query,
   setDoc,
   Unsubscribe,
-} from 'firebase/firestore';
+} from '@react-native-firebase/firestore';
+
+// React Native Firebase auto-initialises from google-services.json; we still
+// need a Firestore instance bound to the default app.
+const firestoreDb = getFirestore();
 
 const USER_DOCUMENT_ID = 'defaultUser';
 const USER_COLLECTION = 'appUsers';
