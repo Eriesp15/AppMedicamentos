@@ -26,6 +26,9 @@ import {
 } from './src/services/alarmService';
 import { clearAlarmLaunchNotification } from './src/services/AlarmLaunchNative';
 import { TrackingScreen } from './src/screens/TrackingScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 type InitialAlarmProps = Partial<AlarmScreenData> & {
   fromNativeAlarm?: boolean;
@@ -271,11 +274,35 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   );
 }
 
+function MainNavigator({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return <AppShell initialAlarm={initialAlarm} />;
+}
+
 function App(props: InitialAlarmProps) {
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        '372237029572-hf4qesltv7rrvsutdch9tldr7knuokp0.apps.googleusercontent.com',
+      offlineAccess: false,
+    });
+  }, []);
+
   return (
     <SafeAreaProvider>
       <AppSettingsProvider>
-        <AppShell initialAlarm={props} />
+        <AuthProvider>
+          <MainNavigator initialAlarm={props} />
+        </AuthProvider>
       </AppSettingsProvider>
     </SafeAreaProvider>
   );
