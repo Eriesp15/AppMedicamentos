@@ -20,6 +20,7 @@ import {
   isErrorWithCode,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import { persistProfilePhoto } from '../storage/medicationStorage';
 
 const WEB_CLIENT_ID =
   '729177671885-dup8nr99r2cec96q05156gip3n96p25q.apps.googleusercontent.com';
@@ -153,7 +154,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         accessToken,
       );
       await signInWithCredential(getAuth(), credential);
-      // onAuthStateChanged will fire and update state; nothing else to do.
+      // Save the Google profile photo to the Firestore profile.
+      const photo = response.data.user.photo;
+      if (photo) {
+        const uid = getAuth().currentUser?.uid;
+        persistProfilePhoto(uid ?? null, photo).catch(() => {});
+      }
     } catch (error) {
       if (isErrorWithCode(error)) {
         switch (error.code) {
@@ -195,6 +201,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSignOut = useCallback(async () => {
+    const uid = getAuth().currentUser?.uid;
+    if (uid) {
+      persistProfilePhoto(uid, '').catch(() => {});
+    }
     try {
       await GoogleSignin.revokeAccess();
       await GoogleSignin.signOut();

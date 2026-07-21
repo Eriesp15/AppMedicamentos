@@ -48,7 +48,7 @@ export function MedicationAutocomplete({
       dosage: med.dosage,
       medicineType: med.medicineType,
       unit: med.unit,
-      frequency: med.frequency,
+      frequency: String(med.frequency),
       foodInstruction: med.foodInstruction,
     }));
   };

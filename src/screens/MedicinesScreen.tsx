@@ -9,7 +9,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons';
 import {AppIcon} from '../components/AppIcon';
-import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES, MEDICINE_TYPES} from '../constants/data';
 import {Medicine} from '../types/medication';
@@ -20,6 +20,9 @@ type Props = {
   onOpenEditForm: (medicine: Medicine) => void;
   onDeleteMedicine: (medicineId: string) => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  profileName: string;
+  photo: string;
 };
 
 export function MedicinesScreen({
@@ -28,6 +31,9 @@ export function MedicinesScreen({
   onOpenEditForm,
   onDeleteMedicine,
   onOpenSettings,
+  onOpenProfile,
+  profileName,
+  photo,
 }: Props) {
   const {palette, styles: appStyles} = useAppSettings();
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,7 +55,7 @@ export function MedicinesScreen({
         `Tipo: ${medicine.medicineType || 'Medicamento'}`,
         `Dosis: ${medicine.dosage} ${medicine.unit || ''}`.trim(),
         `Frecuencia: ${
-          FREQUENCIES.find(f => f.id === medicine.frequency)?.label || medicine.frequency
+          FREQUENCIES.find(f => f.hours === medicine.frequency)?.label || `${medicine.frequency}h`
         }`,
         `Hora: ${medicine.startTime}`,
         `Alimentos: ${medicine.foodInstruction || 'Con alimentos'}`,
@@ -62,15 +68,14 @@ export function MedicinesScreen({
 
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <View style={appStyles.headerRow}>
-        <View>
-          <Text style={appStyles.appTitle}>Mis Medicamentos</Text>
-          <Text style={appStyles.softText}>
-            {medicines.length} medicamentos registrados
-          </Text>
-        </View>
-        <SettingsHeaderButton onPress={onOpenSettings} />
-      </View>
+      <ScreenHeader
+        title="Mis Medicamentos"
+        subtitle={`${medicines.length} medicamentos registrados`}
+        profileName={profileName}
+        photo={photo}
+        onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
+      />
 
       <View style={appStyles.searchBox}>
         <View style={appStyles.inlineIconText}>
@@ -136,7 +141,7 @@ export function MedicinesScreen({
             </View>
             <View style={appStyles.medicineDetailStrip}>
               <Text style={appStyles.softText} numberOfLines={2}>
-                {FREQUENCIES.find(f => f.id === item.frequency)?.label} -{' '}
+                {FREQUENCIES.find(f => f.hours === item.frequency)?.label || `${item.frequency}h`} -{' '}
                 {item.foodInstruction || 'Con alimentos'}
               </Text>
             </View>

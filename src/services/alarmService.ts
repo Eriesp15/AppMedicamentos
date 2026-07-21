@@ -37,21 +37,14 @@ function getAlarmSound(soundId: Medicine['alarmSound']) {
   );
 }
 
-function getDoseOffsets(frequency: string, customFrequencyHours?: string) {
-  if (frequency === 'cada8h') return [0, 8, 16];
-  if (frequency === 'cada12h') return [0, 12];
-  if (frequency === 'otra') {
-    const hours = parseInt(customFrequencyHours || '', 10);
-    if (hours > 0) {
-      const doses: number[] = [];
-      for (let offset = 0; offset < 24; offset += hours) {
-        doses.push(offset);
-      }
-      return doses;
-    }
-    return [0];
+function getDoseOffsets(frequency: number) {
+  const hours = Number(frequency) || 24;
+  if (hours <= 0) return [0];
+  const doses: number[] = [];
+  for (let offset = 0; offset < 24; offset += hours) {
+    doses.push(offset);
   }
-  return [0];
+  return doses;
 }
 
 function getNotificationIds(medicineId: string) {
@@ -94,7 +87,6 @@ function createNotificationData(medicine: Medicine, notificationId = '') {
     medicationId: medicine.id,
     medicationName: medicine.name,
     scheduledTime: medicine.startTime,
-    dosage: medicine.dosage,
     snoozeMinutes: medicine.snoozeMinutes,
     alarmSound: medicine.alarmSound,
   };
@@ -108,7 +100,6 @@ export function alarmDataFromPayload(
     medicationId: String(data.medicationId || ''),
     medicationName: String(data.medicationName || 'Medicamento'),
     scheduledTime: String(data.scheduledTime || ''),
-    dosage: String(data.dosage || ''),
     snoozeMinutes: Number(data.snoozeMinutes || 10),
     alarmSound: String(data.alarmSound || 'default'),
   };
@@ -209,7 +200,7 @@ export async function scheduleMedicineAlarms(
   if (shouldAbort?.()) return;
   const channelId = await ensureAlarmChannel(medicine, settings);
   const sound = getAlarmSound(medicine.alarmSound);
-  const offsets = getDoseOffsets(medicine.frequency, medicine.customFrequencyHours);
+  const offsets = getDoseOffsets(medicine.frequency);
 
   if (shouldAbort?.()) return;
   const hasExactPermission = Platform.OS === 'android' ? await checkExactAlarmPermission() : true;
@@ -330,7 +321,6 @@ export async function markNotificationDoseAsTaken(data: Record<string, unknown>)
     medicationId,
     medicationName: String(data.medicationName || 'Medicamento'),
     scheduledTime: String(data.scheduledTime || ''),
-    dosage: String(data.dosage || ''),
     date: new Date().toISOString(),
     taken: true,
   };
@@ -361,7 +351,6 @@ export async function snoozeNotification(data: Record<string, unknown>) {
     medicationId,
     medicationName: String(data.medicationName || 'Medicamento'),
     scheduledTime: String(data.scheduledTime || ''),
-    dosage: String(data.dosage || ''),
     snoozeMinutes,
     alarmSound: soundId,
   };
@@ -372,9 +361,7 @@ export async function snoozeNotification(data: Record<string, unknown>) {
     {
       id: snoozeNotificationId,
       title: `⏰ Recordatorio (${snoozeMinutes} min)`,
-      body: `${String(data.medicationName || 'Medicamento')} - ${String(
-        data.dosage || '',
-      )}`,
+      body: `${String(data.medicationName || 'Medicamento')}`,
       data: snoozeData,
       android: {
         channelId,

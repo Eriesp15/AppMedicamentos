@@ -1,13 +1,20 @@
 export type AppTab = 'home' | 'medicines' | 'add' | 'schedules' | 'tracking';
 
+export type MedicineType =
+  | 'Pastilla'
+  | 'Jarabe'
+  | 'Inyeccion'
+  | 'Capsula'
+  | 'Gotas'
+  | 'Inhalador';
+
 export type Medicine = {
   id: string;
   name: string;
-  medicineType: string;
+  medicineType: MedicineType;
   unit: string;
   dosage: string;
-  frequency: string;
-  customFrequencyHours: string;
+  frequency: number;
   startTime: string;
   foodInstruction: string;
   notes: string;
@@ -17,6 +24,8 @@ export type Medicine = {
   createdAt: string;
   active: boolean;
   treatmentDays?: number;
+  remainingDays?: number;
+  userId: string;
 };
 
 export type ActivityItem = {
@@ -24,18 +33,16 @@ export type ActivityItem = {
   medicationId: string;
   medicationName: string;
   scheduledTime: string;
-  dosage: string;
   date: string;
   taken: boolean;
 };
 
 export type MedicineForm = {
   name: string;
-  medicineType: string;
+  medicineType: MedicineType;
   unit: string;
   dosage: string;
   frequency: string;
-  customFrequencyHours: string;
   startTime: string;
   foodInstruction: string;
   notes: string;
@@ -47,20 +54,20 @@ export type MedicineForm = {
 
 export type UserProfile = {
   fullName: string;
-  age: string;
   phone: string;
   emergencyContact: string;
   bloodType: string;
   allergies: string;
   chronicConditions: string;
+  photo: string;
 };
 
 export type MedicationSuggestion = {
   name: string;
-  medicineType: string;
+  medicineType: MedicineType;
   unit: string;
   dosage: string;
-  frequency: string;
+  frequency: number;
   foodInstruction: string;
 };
 

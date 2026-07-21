@@ -1,6 +1,7 @@
 import React from 'react';
-import {KeyboardAvoidingView, ScrollView, Text, View} from 'react-native';
+import {KeyboardAvoidingView, ScrollView, View} from 'react-native';
 import {MedicineFormFields} from '../components/MedicineFormModal';
+import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {MedicationSuggestion, MedicineForm} from '../types/medication';
 
@@ -9,9 +10,13 @@ type Props = {
   setForm: React.Dispatch<React.SetStateAction<MedicineForm>>;
   onSave: () => void;
   medicationCatalog: MedicationSuggestion[];
+  onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  profileName: string;
+  photo: string;
 };
 
-export function AddMedicineScreen({form, setForm, onSave, medicationCatalog}: Props) {
+export function AddMedicineScreen({form, setForm, onSave, medicationCatalog, onOpenSettings, onOpenProfile, profileName, photo}: Props) {
   const {styles: appStyles} = useAppSettings();
 
   return (
@@ -22,12 +27,14 @@ export function AddMedicineScreen({form, setForm, onSave, medicationCatalog}: Pr
         style={{flex: 1}}
         contentContainerStyle={appStyles.scrollContent}
         keyboardShouldPersistTaps="handled">
-        <View style={appStyles.headerRow}>
-          <View>
-            <Text style={appStyles.appTitle}>Nuevo Medicamento</Text>
-            <Text style={appStyles.softText}>Completa la informacion</Text>
-          </View>
-        </View>
+        <ScreenHeader
+          title="Nuevo Medicamento"
+          subtitle="Completa la informacion"
+          profileName={profileName}
+          photo={photo}
+          onOpenProfile={onOpenProfile}
+          onOpenSettings={onOpenSettings}
+        />
 
         <View style={appStyles.formPanel}>
           <MedicineFormFields

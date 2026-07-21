@@ -19,7 +19,6 @@ function createUser({fullName, email, password}) {
   db.profiles.push({
     userId: user.id,
     fullName,
-    age: '',
     phone: '',
     emergencyContact: '',
     bloodType: '',

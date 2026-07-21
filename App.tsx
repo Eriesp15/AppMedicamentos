@@ -18,6 +18,7 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { MedicinesScreen } from './src/screens/MedicinesScreen';
 import { SchedulesScreen } from './src/screens/SchedulesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 import {
   alarmDataFromPayload,
   cancelMedicineAlarms,
@@ -37,6 +38,7 @@ type InitialAlarmProps = Partial<AlarmScreenData> & {
 function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   const { styles, statusBarStyle, statusBarBg } = useAppSettings();
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [activeAlarm, setActiveAlarm] = useState<AlarmScreenData | null>(null);
   const {
     activeTab,
@@ -46,6 +48,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
     medicines,
     activity,
     profile,
+    setProfile,
     form,
     setForm,
     takenTodayCount,
@@ -85,7 +88,6 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
         medicationId: String(normalized.medicationId || ''),
         medicationName: String(normalized.medicationName || 'Medicamento'),
         scheduledTime: String(normalized.scheduledTime || ''),
-        dosage: String(normalized.dosage || ''),
         snoozeMinutes: Number(normalized.snoozeMinutes || 10),
         alarmSound: String(
           normalized.alarmSound || 'default',
@@ -130,9 +132,11 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
 
   const openSettings = () => setShowSettings(true);
   const closeSettings = () => setShowSettings(false);
+  const openProfile = () => setShowProfile(true);
+  const closeProfile = () => setShowProfile(false);
   const openProfileFromSettings = () => {
     closeSettings();
-    setActiveTab('tracking');
+    setShowProfile(true);
   };
 
   const closeActiveAlarm = useCallback((data?: AlarmScreenData | null) => {
@@ -199,7 +203,9 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
             onMarkTaken={markTaken}
             onMarkMissed={markMissed}
             onOpenSettings={openSettings}
+            onOpenProfile={openProfile}
             profileName={profile.fullName}
+            photo={profile.photo}
           />
         )}
 
@@ -210,6 +216,9 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
             onOpenEditForm={openEditForm}
             onDeleteMedicine={deleteMedicine}
             onOpenSettings={openSettings}
+            onOpenProfile={openProfile}
+            profileName={profile.fullName}
+            photo={profile.photo}
           />
         )}
 
@@ -219,6 +228,10 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
             setForm={setForm}
             onSave={saveMedicine}
             medicationCatalog={medicationCatalog}
+            onOpenSettings={openSettings}
+            onOpenProfile={openProfile}
+            profileName={profile.fullName}
+            photo={profile.photo}
           />
         )}
 
@@ -226,9 +239,12 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
           <SchedulesScreen
             medicines={medicines}
             onOpenSettings={openSettings}
+            onOpenProfile={openProfile}
             onOpenEditForm={openEditForm}
             onDeleteMedicine={deleteMedicine}
             onUpdateMedicineAlarm={updateMedicineAlarm}
+            profileName={profile.fullName}
+            photo={profile.photo}
           />
         )}
 
@@ -240,6 +256,9 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
             missedTodayCount={missedTodayCount}
             adherencePercent={adherencePercent}
             onOpenSettings={openSettings}
+            onOpenProfile={openProfile}
+            profileName={profile.fullName}
+            photo={profile.photo}
           />
         )}
 
@@ -269,6 +288,21 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
         visible={showSettings}
         onClose={closeSettings}
         onOpenProfile={openProfileFromSettings}
+      />
+
+      <ProfileScreen
+        visible={showProfile}
+        onClose={closeProfile}
+        profile={profile}
+        onChange={setProfile}
+        onSave={() => {
+          closeProfile();
+        }}
+        onOpenSettings={() => {
+          closeProfile();
+          openSettings();
+        }}
+        profileName={profile.fullName}
       />
     </>
   );

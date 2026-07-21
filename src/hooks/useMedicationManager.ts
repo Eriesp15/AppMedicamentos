@@ -311,8 +311,7 @@ export function useMedicationManager() {
       medicineType: medicine.medicineType || EMPTY_MEDICINE_FORM.medicineType,
       unit: medicine.unit || EMPTY_MEDICINE_FORM.unit,
       dosage: medicine.dosage,
-      frequency: medicine.frequency,
-      customFrequencyHours: medicine.customFrequencyHours || '',
+      frequency: String(medicine.frequency),
       startTime: medicine.startTime,
       foodInstruction:
         medicine.foodInstruction || EMPTY_MEDICINE_FORM.foodInstruction,
@@ -341,6 +340,7 @@ export function useMedicationManager() {
       notes: sanitizeNotes(form.notes).trim(),
     };
 
+    const frequencyNum = parseInt(sanitizedForm.frequency, 10) || 8;
     const treatmentDaysNum = sanitizedForm.treatmentDays
       ? parseInt(sanitizedForm.treatmentDays, 10)
       : undefined;
@@ -354,7 +354,13 @@ export function useMedicationManager() {
       setMedicines(current =>
         current.map(item =>
           item.id === editingMedicineId
-            ? { ...item, ...sanitizedForm, treatmentDays: treatmentDaysNum }
+            ? {
+                ...item,
+                ...sanitizedForm,
+                frequency: frequencyNum,
+                treatmentDays: treatmentDaysNum,
+                remainingDays: treatmentDaysNum,
+              }
             : item,
         ),
       );
@@ -365,7 +371,6 @@ export function useMedicationManager() {
                 ...item,
                 medicationName: sanitizedForm.name,
                 scheduledTime: sanitizedForm.startTime,
-                dosage: sanitizedForm.dosage,
               }
             : item,
         ),
@@ -375,9 +380,12 @@ export function useMedicationManager() {
       const newMedicine: Medicine = {
         id: newId,
         ...sanitizedForm,
+        frequency: frequencyNum,
         treatmentDays: treatmentDaysNum,
+        remainingDays: treatmentDaysNum,
         createdAt: new Date().toISOString(),
         active: true,
+        userId: userId || '',
       };
       setMedicines(current => [newMedicine, ...current]);
     }
@@ -460,7 +468,6 @@ export function useMedicationManager() {
       medicationId: medicine.id,
       medicationName: medicine.name,
       scheduledTime: medicine.startTime,
-      dosage: medicine.dosage,
       date: new Date().toISOString(),
       taken: true,
     };
@@ -478,7 +485,6 @@ export function useMedicationManager() {
       medicationId: medicine.id,
       medicationName: medicine.name,
       scheduledTime: medicine.startTime,
-      dosage: medicine.dosage,
       date: new Date().toISOString(),
       taken: false,
     };

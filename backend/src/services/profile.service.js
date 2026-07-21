@@ -18,7 +18,6 @@ function ensureProfileByUserId(userId, defaults = {}) {
   const profile = {
     userId,
     fullName: defaults.fullName || '',
-    age: defaults.age || '',
     phone: defaults.phone || '',
     emergencyContact: defaults.emergencyContact || '',
     bloodType: defaults.bloodType || '',
@@ -37,7 +36,6 @@ function updateProfileByUserId(userId, data) {
   const profile = ensureProfileByUserId(userId);
 
   profile.fullName = data.fullName?.trim() ?? profile.fullName;
-  profile.age = data.age ?? profile.age;
   profile.phone = data.phone ?? profile.phone;
   profile.emergencyContact =
     data.emergencyContact ?? profile.emergencyContact;

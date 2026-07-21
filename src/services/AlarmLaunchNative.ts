@@ -10,7 +10,6 @@ export function scheduleAlarmLaunch(
     medicationId: string;
     medicationName: string;
     scheduledTime: string;
-    dosage: string;
     snoozeMinutes: number;
     alarmSound: string;
   },

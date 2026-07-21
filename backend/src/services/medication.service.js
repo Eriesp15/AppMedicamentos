@@ -10,11 +10,10 @@ function createMedication(userId, payload) {
     id: payload.id || randomUUID(),
     userId,
     name: payload.name.trim(),
-    medicineType: payload.medicineType || '',
+    medicineType: payload.medicineType || 'Pastilla',
     unit: payload.unit || '',
     dosage: payload.dosage.trim(),
-    frequency: payload.frequency,
-    customFrequencyHours: payload.customFrequencyHours || '',
+    frequency: Number(payload.frequency) || 8,
     startTime: payload.startTime,
     foodInstruction: payload.foodInstruction || '',
     notes: payload.notes || '',
@@ -22,6 +21,7 @@ function createMedication(userId, payload) {
     alarmSound: payload.alarmSound || 'default',
     snoozeMinutes: payload.snoozeMinutes || 10,
     treatmentDays: payload.treatmentDays ?? null,
+    remainingDays: payload.remainingDays ?? null,
     active: typeof payload.active === 'boolean' ? payload.active : true,
     createdAt: payload.createdAt || new Date().toISOString(),
   };
@@ -41,8 +41,7 @@ function updateMedication(userId, medicationId, payload) {
   medication.medicineType = payload.medicineType ?? medication.medicineType;
   medication.unit = payload.unit ?? medication.unit;
   medication.dosage = payload.dosage?.trim() ?? medication.dosage;
-  medication.frequency = payload.frequency ?? medication.frequency;
-  medication.customFrequencyHours = payload.customFrequencyHours ?? medication.customFrequencyHours;
+  medication.frequency = payload.frequency != null ? Number(payload.frequency) : medication.frequency;
   medication.startTime = payload.startTime ?? medication.startTime;
   medication.foodInstruction = payload.foodInstruction ?? medication.foodInstruction;
   medication.notes = payload.notes ?? medication.notes;
@@ -50,6 +49,7 @@ function updateMedication(userId, medicationId, payload) {
   medication.alarmSound = payload.alarmSound ?? medication.alarmSound;
   medication.snoozeMinutes = payload.snoozeMinutes ?? medication.snoozeMinutes;
   medication.treatmentDays = payload.treatmentDays ?? medication.treatmentDays;
+  medication.remainingDays = payload.remainingDays ?? medication.remainingDays;
   medication.active = payload.active ?? medication.active;
   return medication;
 }

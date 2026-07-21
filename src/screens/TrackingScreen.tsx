@@ -1,6 +1,6 @@
 import React from 'react';
 import {ScrollView, Text, View} from 'react-native';
-import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {ActivityItem, Medicine} from '../types/medication';
 
@@ -11,6 +11,9 @@ type Props = {
   missedTodayCount: number;
   adherencePercent: number;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  profileName: string;
+  photo: string;
 };
 
 export function TrackingScreen({
@@ -20,6 +23,9 @@ export function TrackingScreen({
   missedTodayCount,
   adherencePercent,
   onOpenSettings,
+  onOpenProfile,
+  profileName,
+  photo,
 }: Props) {
   const {styles: appStyles, palette} = useAppSettings();
   const streakDays = Math.max(0, activities.filter(item => item.taken).length);
@@ -28,13 +34,14 @@ export function TrackingScreen({
 
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <View style={appStyles.headerRow}>
-        <View>
-          <Text style={appStyles.appTitle}>Seguimiento</Text>
-          <Text style={appStyles.softText}>Tu progreso de tratamiento</Text>
-        </View>
-        <SettingsHeaderButton onPress={onOpenSettings} />
-      </View>
+      <ScreenHeader
+        title="Seguimiento"
+        subtitle="Tu progreso de tratamiento"
+        profileName={profileName}
+        photo={photo}
+        onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
+      />
 
       <Text style={appStyles.sectionTitle}>Resumen de hoy</Text>
       <View style={appStyles.metricsRow}>
@@ -101,7 +108,7 @@ export function TrackingScreen({
             <View>
               <Text style={appStyles.medicineName}>{item.medicationName}</Text>
               <Text style={appStyles.softText}>
-                {item.scheduledTime} - {item.dosage}
+                {item.scheduledTime}
               </Text>
             </View>
             <View

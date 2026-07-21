@@ -7,7 +7,7 @@ import {
   faVolumeHigh,
 } from '@fortawesome/free-solid-svg-icons';
 import { AppIcon } from '../components/AppIcon';
-import { SettingsHeaderButton } from '../components/SettingsHeaderButton';
+import { ScreenHeader } from '../components/ScreenHeader';
 import {
   ALARM_SOUND_OPTIONS,
   FREQUENCIES,
@@ -20,8 +20,11 @@ import { ReminderAdvanceMinutes } from '../types/settings';
 type Props = {
   medicines: Medicine[];
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
   onOpenEditForm: (medicine: Medicine) => void;
   onDeleteMedicine: (medicineId: string) => void;
+  profileName: string;
+  photo: string;
   onUpdateMedicineAlarm: (
     medicineId: string,
     partial: Partial<{
@@ -38,8 +41,11 @@ const REMINDER_OPTIONS: ReminderAdvanceMinutes[] = [0, 5, 10, 15];
 export function SchedulesScreen({
   medicines,
   onOpenSettings,
+  onOpenProfile,
   onOpenEditForm,
   onDeleteMedicine,
+  profileName,
+  photo,
   onUpdateMedicineAlarm,
 }: Props) {
   const {
@@ -51,13 +57,14 @@ export function SchedulesScreen({
 
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <View style={appStyles.headerRow}>
-        <View>
-          <Text style={appStyles.appTitle}>Horarios</Text>
-          <Text style={appStyles.softText}>Organiza tus tomas del dia</Text>
-        </View>
-        <SettingsHeaderButton onPress={onOpenSettings} />
-      </View>
+      <ScreenHeader
+        title="Horarios"
+        subtitle="Organiza tus tomas del dia"
+        profileName={profileName}
+        photo={photo}
+        onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
+      />
 
       <View style={appStyles.calendarCard}>
         <View style={appStyles.rowBetween}>
@@ -120,7 +127,7 @@ export function SchedulesScreen({
                       <Text style={appStyles.medicineName}>{item.name}</Text>
                       <Text style={appStyles.softText}>
                         {item.medicineType || 'Medicamento'} -{' '}
-                        {FREQUENCIES.find(f => f.id === item.frequency)?.label}
+                        {FREQUENCIES.find(f => f.hours === item.frequency)?.label}
                       </Text>
                       {item.treatmentDays ? (
                         (() => {

@@ -254,21 +254,21 @@ export function MedicineFormFields({
         <View style={appStyles.frequencyWrap}>
           {FREQUENCIES.map(option => (
             <TouchableOpacity
-              key={option.id}
+              key={option.hours}
               style={[
                 appStyles.frequencyItem,
-                form.frequency === option.id
+                form.frequency === String(option.hours)
                   ? appStyles.frequencyItemActive
                   : null,
               ]}
               onPress={() =>
-                setForm(current => ({ ...current, frequency: option.id }))
+                setForm(current => ({ ...current, frequency: String(option.hours) }))
               }
             >
               <Text
                 style={[
                   appStyles.frequencyItemText,
-                  form.frequency === option.id
+                  form.frequency === String(option.hours)
                     ? appStyles.frequencyItemTextActive
                     : null,
                 ]}
@@ -278,25 +278,6 @@ export function MedicineFormFields({
             </TouchableOpacity>
           ))}
         </View>
-        {form.frequency === 'otra' && (
-          <View style={appStyles.customFrequencyRow}>
-            <TextInput
-              style={appStyles.customFrequencyInput}
-              placeholder="Ej: 6"
-              placeholderTextColor={palette.placeholderText}
-              keyboardType="number-pad"
-              maxLength={3}
-              value={form.customFrequencyHours}
-              onChangeText={value =>
-                setForm(current => ({
-                  ...current,
-                  customFrequencyHours: value.replace(/[^0-9]/g, ''),
-                }))
-              }
-            />
-            <Text style={appStyles.customFrequencyLabel}>horas</Text>
-          </View>
-        )}
       </View>
 
       <View style={appStyles.fieldCard}>

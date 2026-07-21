@@ -17,6 +17,7 @@ import {
   faSun,
 } from '@fortawesome/free-solid-svg-icons';
 import {AppIcon} from '../components/AppIcon';
+import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES} from '../constants/data';
 import {Medicine} from '../types/medication';
@@ -31,7 +32,9 @@ type Props = {
   onMarkTaken: (medicine: Medicine) => void;
   onMarkMissed: (medicine: Medicine) => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
   profileName: string;
+  photo: string;
 };
 
 // Helper to convert HH:MM 24h to 12h format
@@ -232,7 +235,9 @@ export function HomeScreen({
   onMarkTaken,
   onMarkMissed,
   onOpenSettings,
+  onOpenProfile,
   profileName,
+  photo,
 }: Props) {
   const {palette, styles: appStyles} = useAppSettings();
   const missedMedicines = medicines.filter(
@@ -321,21 +326,14 @@ export function HomeScreen({
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
       {/* Header Row */}
-      <View style={appStyles.headerRow}>
-        <View>
-          <Text style={appStyles.softText}>{todayLabel}</Text>
-          <Text style={appStyles.greetingTitle}>
-            Buenos dias,{'\n'}
-            {profileName || 'Maria'}!
-          </Text>
-        </View>
-        <TouchableOpacity style={appStyles.avatarButton} onPress={onOpenSettings}>
-          <Text style={appStyles.avatarText}>
-            {(profileName || 'M').trim().charAt(0).toUpperCase()}
-          </Text>
-          <View style={appStyles.onlineDot} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={todayLabel || 'Inicio'}
+        subtitle={`Buenos dias, ${profileName || 'Maria'}!`}
+        profileName={profileName}
+        photo={photo}
+        onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
+      />
 
       {/* Proxima Toma Card */}
       <View style={appStyles.nextDoseCard}>
@@ -551,7 +549,7 @@ export function HomeScreen({
                         appStyles.timelineCardSubtitle,
                         { color: theme.color }
                       ]} numberOfLines={1} ellipsizeMode="tail">
-                        {item.dosage} {item.unit || ''} • {FREQUENCIES.find(f => f.id === item.frequency)?.label || 'Diario'}
+                        {item.dosage} {item.unit || ''} • {FREQUENCIES.find(f => f.hours === item.frequency)?.label || 'Diario'}
                       </Text>
 
                       <View style={appStyles.timelineCardFooter}>

@@ -219,6 +219,7 @@ function normalizeMedicine(data: Medicine): Medicine {
         : EMPTY_MEDICINE_FORM.alarmEnabled,
     alarmSound: data.alarmSound || EMPTY_MEDICINE_FORM.alarmSound,
     snoozeMinutes: data.snoozeMinutes || EMPTY_MEDICINE_FORM.snoozeMinutes,
+    frequency: typeof data.frequency === 'number' ? data.frequency : 8,
     active:
       typeof data.active === 'boolean' ? data.active : true,
   };
@@ -490,6 +491,17 @@ export async function persistProfile(
   }
   await ensureUserDocument(userId);
   await profileDocRef(userId).set(profile);
+}
+
+export async function persistProfilePhoto(
+  userId: string | null,
+  photo: string,
+) {
+  if (!userId) {
+    return;
+  }
+  await ensureUserDocument(userId);
+  await profileDocRef(userId).set({photo}, {merge: true});
 }
 
 export function subscribeToMedicines(

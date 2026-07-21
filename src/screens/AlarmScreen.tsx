@@ -9,7 +9,6 @@ export type AlarmScreenData = {
   medicationId: string;
   medicationName: string;
   scheduledTime: string;
-  dosage: string;
   snoozeMinutes: number;
   alarmSound: AlarmSoundId;
 };
@@ -79,7 +78,7 @@ export function AlarmScreen({ alarm, onDismiss, onTaken, onSnooze }: Props) {
           textAlign: 'center',
           marginBottom: 8,
         }}>
-          {alarm.dosage}
+          {alarm.medicationName}
         </Text>
 
         {sound && (

@@ -1,6 +1,6 @@
 import React from 'react';
 import {Text, TouchableOpacity, View, ScrollView} from 'react-native';
-import {SettingsHeaderButton} from '../components/SettingsHeaderButton';
+import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {ActivityItem} from '../types/medication';
 import {formatDateLabel} from '../utils/date';
@@ -11,6 +11,9 @@ type Props = {
   onNextDay: () => void;
   activities: ActivityItem[];
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  profileName: string;
+  photo: string;
 };
 
 export function HistoryScreen({
@@ -19,14 +22,20 @@ export function HistoryScreen({
   onNextDay,
   activities,
   onOpenSettings,
+  onOpenProfile,
+  profileName,
+  photo,
 }: Props) {
   const {styles: appStyles, palette} = useAppSettings();
   return (
     <ScrollView contentContainerStyle={appStyles.scrollContent}>
-      <View style={appStyles.headerRow}>
-        <Text style={appStyles.appTitle}>Mi Historial</Text>
-        <SettingsHeaderButton onPress={onOpenSettings} />
-      </View>
+      <ScreenHeader
+        title="Mi Historial"
+        profileName={profileName}
+        photo={photo}
+        onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
+      />
 
       <View style={appStyles.historyDateNav}>
         <TouchableOpacity style={appStyles.navRoundButton} onPress={onPreviousDay}>
@@ -59,7 +68,7 @@ export function HistoryScreen({
             <View>
               <Text style={appStyles.medicineName}>{item.medicationName}</Text>
               <Text style={appStyles.softText}>
-                {item.dosage} - {item.scheduledTime}
+                {item.scheduledTime}
               </Text>
             </View>
             <View

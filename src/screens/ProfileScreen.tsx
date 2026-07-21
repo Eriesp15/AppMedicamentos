@@ -1,19 +1,20 @@
 import React from 'react';
 import {
   KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SettingsHeaderButton } from '../components/SettingsHeaderButton';
 import { INPUT_LIMITS } from '../constants/data';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { UserProfile } from '../types/medication';
 import {
   sanitizeBloodType,
-  sanitizeDigits,
   sanitizeMedicineName,
   sanitizeNotes,
   sanitizePersonName,
@@ -21,30 +22,38 @@ import {
 } from '../utils/inputSanitizers';
 
 type Props = {
+  visible: boolean;
+  onClose: () => void;
   profile: UserProfile;
   onChange: (value: UserProfile) => void;
   onSave: () => void;
   onOpenSettings: () => void;
+  profileName: string;
 };
 
 export function ProfileScreen({
+  visible,
+  onClose,
   profile,
   onChange,
   onSave,
   onOpenSettings,
+  profileName,
 }: Props) {
   const { styles: appStyles, palette } = useAppSettings();
 
   return (
-    <KeyboardAvoidingView style={{flex: 1}} behavior="padding">
-      <ScrollView contentContainerStyle={appStyles.scrollContent}>
-        <View style={appStyles.headerRow}>
-          <Text style={appStyles.appTitle}>Mi Perfil</Text>
-          <SettingsHeaderButton onPress={onOpenSettings} />
-        </View>
-        <Text style={appStyles.softText}>
-          Datos personales y de salud basicos.
-        </Text>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={{flex: 1, backgroundColor: palette.bg}}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <StatusBar barStyle="dark-content" backgroundColor={palette.bg} translucent={false} />
+        <ScrollView contentContainerStyle={appStyles.scrollContent}>
+          <View style={[appStyles.headerRow, {marginBottom: 16}]}>
+            <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar perfil">
+              <Text style={{fontFamily: 'Outfit', fontSize: 16, color: palette.primaryDark}}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
 
         <View style={appStyles.emptyCard}>
           <Text style={appStyles.inputLabel}>Nombre completo</Text>
@@ -57,22 +66,6 @@ export function ProfileScreen({
               onChange({ ...profile, fullName: sanitizePersonName(value) })
             }
             placeholder="Ej: Maria Perez"
-            placeholderTextColor={palette.placeholderText}
-          />
-
-          <Text style={appStyles.inputLabel}>Edad</Text>
-          <TextInput
-            style={appStyles.input}
-            value={profile.age}
-            maxLength={INPUT_LIMITS.PROFILE_AGE}
-            onChangeText={value =>
-              onChange({
-                ...profile,
-                age: sanitizeDigits(value, INPUT_LIMITS.PROFILE_AGE),
-              })
-            }
-            keyboardType="numeric"
-            placeholder="Ej: 68"
             placeholderTextColor={palette.placeholderText}
           />
 
@@ -148,6 +141,7 @@ export function ProfileScreen({
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
