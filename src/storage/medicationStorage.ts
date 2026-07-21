@@ -1,33 +1,67 @@
 import { ActivityItem, Medicine, MedicationSuggestion, UserProfile } from '../types/medication';
-import { EMPTY_MEDICINE_FORM, MEDICATION_DATABASE, STORAGE_KEYS } from '../constants/data';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  getFirestore,
-  onSnapshot,
-  orderBy,
-  query,
-  setDoc,
-  Unsubscribe,
+  CATALOG_STORAGE_KEY,
+  DEFAULT_PROFILE,
+  EMPTY_MEDICINE_FORM,
+  MEDICATION_DATABASE,
+  userStorageKeys,
+} from '../constants/data';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore, {
+  FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 
-// React Native Firebase auto-initialises from google-services.json; we still
-// need a Firestore instance bound to the default app.
-const firestoreDb = getFirestore();
+// React Native Firebase auto-initialises from google-services.json; we
+// lazily obtain the Firestore instance so it's guaranteed to be ready
+// regardless of module load order.
+let _firestoreDb: FirebaseFirestoreTypes.Module | null = null;
+function firestoreDb(): FirebaseFirestoreTypes.Module {
+  if (!_firestoreDb) {
+    _firestoreDb = firestore();
+  }
+  return _firestoreDb;
+}
 
-const USER_DOCUMENT_ID = 'defaultUser';
+// Las rutas de Firestore están namespaced por UID: `appUsers/{uid}/...`.
+// Cada cuenta autenticada tiene su propio espacio; dos cuentas distintas
+// no ven ni pisan los medicamentos del otro.
 const USER_COLLECTION = 'appUsers';
 const PROFILE_DOCUMENT_ID = 'main';
 
-const userDocRef = () => doc(firestoreDb, USER_COLLECTION, USER_DOCUMENT_ID);
-const medicinesCollectionRef = () => collection(userDocRef(), 'medicines');
-const activityCollectionRef = () => collection(userDocRef(), 'activity');
-const profileDocRef = () => doc(userDocRef(), 'profile', PROFILE_DOCUMENT_ID);
-const catalogCollectionRef = () => collection(userDocRef(), 'medicationCatalog');
+// Antes de la introducción de autenticación, la app guardaba todos los
+// datos bajo `appUsers/defaultUser/...` y en claves AsyncStorage
+// globales (`@medicare/medicines`, etc.). Para no perder esos datos al
+// actualizar, `migrateLegacyData` los mueve al namespace del UID cuando
+// el usuario inicia sesión por primera vez.
+//
+// NOTA: Antiguamente también intentábamos drenar `defaultUser` desde
+// Firestore, pero las reglas de seguridad típicas sólo permiten al
+// dueño leer su propio namespace (`request.auth.uid == userId`), por
+// lo que esa lectura siempre devolvía `permission-denied` para
+// cualquier usuario real y provocaba un bucle de errores en cada
+// arranque. La rama Firestore legacy se eliminó por completo: queda
+// en manos de un eventual job de admin.
+const LEGACY_STORAGE_KEYS = {
+  MEDICINES: '@medicare/medicines',
+  ACTIVITY: '@medicare/activity',
+  PROFILE: '@medicare/profile',
+};
+
+function requireUserId(userId: string | null | undefined): string {
+  if (!userId) {
+    throw new Error('Operación de almacenamiento requiere un usuario autenticado.');
+  }
+  return userId;
+}
+
+const userDocRef = (userId: string) =>
+  firestoreDb().collection(USER_COLLECTION).doc(requireUserId(userId));
+const medicinesCollectionRef = (userId: string) =>
+  userDocRef(userId).collection('medicines');
+const activityCollectionRef = (userId: string) =>
+  userDocRef(userId).collection('activity');
+const profileDocRef = (userId: string) =>
+  userDocRef(userId).collection('profile').doc(PROFILE_DOCUMENT_ID);
 
 type PersistedData = {
   medicines: Medicine[];
@@ -35,12 +69,142 @@ type PersistedData = {
   profile?: UserProfile;
 };
 
-async function ensureUserDocument() {
-  await setDoc(
-    userDocRef(),
-    { updatedAt: new Date().toISOString() },
+/**
+ * Garantiza que el documento del usuario exista en Firestore y, si todavía
+ * no tiene perfil, crea uno con los valores por defecto vinculados al UID.
+ * Se invoca en el primer login del usuario. Es idempotente: si los docs
+ * ya existen, solo asegura `updatedAt`.
+ */
+export async function ensureUserDocument(userId: string): Promise<void> {
+  const uid = requireUserId(userId);
+  const userRef = firestoreDb().collection(USER_COLLECTION).doc(uid);
+  const profileRef = userRef.collection('profile').doc(PROFILE_DOCUMENT_ID);
+
+  await userRef.set(
+    {
+      uid,
+      updatedAt: new Date().toISOString(),
+    },
     { merge: true },
   );
+
+  const existingProfile = await profileRef.get();
+  if (!existingProfile.exists) {
+    await profileRef.set({
+      ...DEFAULT_PROFILE,
+      uid,
+      createdAt: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * Migración única: copia datos preexistentes del esquema anterior al
+ * namespace del usuario autenticado. Antes de la introducción de
+ * autenticación, la app escribía en `appUsers/defaultUser/...` y en
+ * claves AsyncStorage globales (`@medicare/medicines`, etc.). Para no
+ * perder esos datos al actualizar, los movemos al namespace del UID
+ * cuando el usuario inicia sesión por primera vez y luego borramos las
+ * claves legacy. Es idempotente y best-effort — un fallo en AsyncStorage
+ * no debe impedir el flujo normal.
+ *
+ * Se marca con un flag por usuario en AsyncStorage para no repetir las
+ * lecturas legacy en cada arranque.
+ *
+ * Antes intentábamos también drenar `appUsers/defaultUser` desde
+ * Firestore, pero las reglas de seguridad típicas sólo permiten al
+ * dueño leer su propio namespace (`request.auth.uid == userId`), por
+ * lo que esa lectura siempre devolvía `permission-denied` y provocaba
+ * un bucle de errores en cada login. Lo eliminamos por completo.
+ */
+const MIGRATION_FLAG_KEY = (uid: string) => `@medicare/${uid}/_migratedLegacy`;
+
+export async function migrateLegacyData(userId: string): Promise<void> {
+  if (!userId) {
+    return;
+  }
+  const targetKeys = userStorageKeys(userId);
+
+  // Si este usuario ya terminó la migración, sólo necesitamos asegurar
+  // que las claves legacy globales no vuelvan a aparecer (defensa contra
+  // reinstalaciones que restauraron la copia de seguridad).
+  if (await AsyncStorage.getItem(MIGRATION_FLAG_KEY(userId))) {
+    await AsyncStorage.multiRemove([
+      LEGACY_STORAGE_KEYS.MEDICINES,
+      LEGACY_STORAGE_KEYS.ACTIVITY,
+      LEGACY_STORAGE_KEYS.PROFILE,
+    ]).catch(() => {});
+    return;
+  }
+
+  try {
+    const [legacyEntries, targetEntries] = await Promise.all([
+      AsyncStorage.multiGet([
+        LEGACY_STORAGE_KEYS.MEDICINES,
+        LEGACY_STORAGE_KEYS.ACTIVITY,
+        LEGACY_STORAGE_KEYS.PROFILE,
+      ]),
+      AsyncStorage.multiGet([
+        targetKeys.MEDICINES,
+        targetKeys.ACTIVITY,
+        targetKeys.PROFILE,
+      ]),
+    ]);
+
+    const legacyValues = Object.fromEntries(legacyEntries);
+    const targetValues = Object.fromEntries(targetEntries);
+
+    const writes: [string, string][] = [];
+    const removals: string[] = [];
+    if (
+      legacyValues[LEGACY_STORAGE_KEYS.MEDICINES] &&
+      !targetValues[targetKeys.MEDICINES]
+    ) {
+      writes.push([
+        targetKeys.MEDICINES,
+        legacyValues[LEGACY_STORAGE_KEYS.MEDICINES] as string,
+      ]);
+      removals.push(LEGACY_STORAGE_KEYS.MEDICINES);
+    }
+    if (
+      legacyValues[LEGACY_STORAGE_KEYS.ACTIVITY] &&
+      !targetValues[targetKeys.ACTIVITY]
+    ) {
+      writes.push([
+        targetKeys.ACTIVITY,
+        legacyValues[LEGACY_STORAGE_KEYS.ACTIVITY] as string,
+      ]);
+      removals.push(LEGACY_STORAGE_KEYS.ACTIVITY);
+    }
+    if (
+      legacyValues[LEGACY_STORAGE_KEYS.PROFILE] &&
+      !targetValues[targetKeys.PROFILE]
+    ) {
+      writes.push([
+        targetKeys.PROFILE,
+        legacyValues[LEGACY_STORAGE_KEYS.PROFILE] as string,
+      ]);
+      removals.push(LEGACY_STORAGE_KEYS.PROFILE);
+    }
+
+    if (writes.length) {
+      await AsyncStorage.multiSet(writes);
+    }
+    if (removals.length) {
+      await AsyncStorage.multiRemove(removals);
+    }
+  } catch {
+    // Migración best-effort: si AsyncStorage falla, seguimos cargando en
+    // vacío antes que bloquear el arranque.
+  }
+
+  // Marcamos la migración como completada PARA ESTE USUARIO siempre,
+  // incluso si AsyncStorage falló: repetirla en cada arranque sólo
+  // produciría churn sin sentido.
+  await AsyncStorage.setItem(
+    MIGRATION_FLAG_KEY(userId),
+    new Date().toISOString(),
+  ).catch(() => {});
 }
 
 function normalizeMedicine(data: Medicine): Medicine {
@@ -72,17 +236,25 @@ function parseJson<T>(raw: string | null, fallback: T): T {
   }
 }
 
-export async function loadLocalData(): Promise<PersistedData> {
+/**
+ * Carga los datos en caché del usuario desde AsyncStorage. Si no hay
+ * `userId`, devuelve un estado vacío (no debe usarse antes del login).
+ */
+export async function loadLocalData(userId: string | null): Promise<PersistedData> {
+  if (!userId) {
+    return { medicines: [], activity: [], profile: undefined };
+  }
+  const keys = userStorageKeys(userId);
   const entries = await AsyncStorage.multiGet([
-    STORAGE_KEYS.MEDICINES,
-    STORAGE_KEYS.ACTIVITY,
-    STORAGE_KEYS.PROFILE,
+    keys.MEDICINES,
+    keys.ACTIVITY,
+    keys.PROFILE,
   ]);
   const values = Object.fromEntries(entries);
-  const medicines = parseJson<Medicine[]>(values[STORAGE_KEYS.MEDICINES], []);
-  const activity = parseJson<ActivityItem[]>(values[STORAGE_KEYS.ACTIVITY], []);
+  const medicines = parseJson<Medicine[]>(values[keys.MEDICINES], []);
+  const activity = parseJson<ActivityItem[]>(values[keys.ACTIVITY], []);
   const profile = parseJson<UserProfile | undefined>(
-    values[STORAGE_KEYS.PROFILE],
+    values[keys.PROFILE],
     undefined,
   );
 
@@ -93,17 +265,31 @@ export async function loadLocalData(): Promise<PersistedData> {
   };
 }
 
-export async function persistLocalData(data: Partial<PersistedData>) {
+/**
+ * Persiste en AsyncStorage bajo las claves del usuario. Escribe tal cual
+ * lo que le pasen: si `data.medicines` viene como `[]`, lo escribe y
+ * respeta la decisión del usuario (p. ej. borrar todos los medicamentos).
+ * Las decisiones de "no pisar la caché local con un merge vacío" se
+ * toman en la capa superior (`loadPersistedData`), no aquí.
+ */
+export async function persistLocalData(
+  userId: string | null,
+  data: Partial<PersistedData>,
+) {
+  if (!userId) {
+    return;
+  }
+  const keys = userStorageKeys(userId);
   const writes: [string, string][] = [];
 
   if (data.medicines) {
-    writes.push([STORAGE_KEYS.MEDICINES, JSON.stringify(data.medicines)]);
+    writes.push([keys.MEDICINES, JSON.stringify(data.medicines)]);
   }
   if (data.activity) {
-    writes.push([STORAGE_KEYS.ACTIVITY, JSON.stringify(data.activity)]);
+    writes.push([keys.ACTIVITY, JSON.stringify(data.activity)]);
   }
   if (data.profile) {
-    writes.push([STORAGE_KEYS.PROFILE, JSON.stringify(data.profile)]);
+    writes.push([keys.PROFILE, JSON.stringify(data.profile)]);
   }
 
   if (writes.length) {
@@ -114,34 +300,49 @@ export async function persistLocalData(data: Partial<PersistedData>) {
 async function syncCollection<T extends { id: string }>(
   collectionRef: ReturnType<typeof medicinesCollectionRef>,
   items: T[],
+  userId: string,
 ) {
-  await ensureUserDocument();
+  await ensureUserDocument(userId);
 
   await Promise.all(
-    items.map(item => setDoc(doc(collectionRef, item.id), item).catch(() => {})),
+    items.map(item =>
+      collectionRef.doc(item.id).set(item),
+    ),
   );
 }
 
-export async function deleteMedicinesFromFirestore(ids: string[]) {
-  const ref = medicinesCollectionRef();
+export async function deleteMedicinesFromFirestore(
+  userId: string | null,
+  ids: string[],
+) {
+  if (!userId) {
+    return;
+  }
+  const ref = medicinesCollectionRef(userId);
   await Promise.all(
-    ids.map(id => deleteDoc(doc(ref, id)).catch(() => {})),
+    ids.map(id => ref.doc(id).delete()),
   );
 }
 
-export async function deleteActivitiesFromFirestore(ids: string[]) {
-  const ref = activityCollectionRef();
+export async function deleteActivitiesFromFirestore(
+  userId: string | null,
+  ids: string[],
+) {
+  if (!userId) {
+    return;
+  }
+  const ref = activityCollectionRef(userId);
   await Promise.all(
-    ids.map(id => deleteDoc(doc(ref, id)).catch(() => {})),
+    ids.map(id => ref.doc(id).delete()),
   );
 }
 
-async function loadRemoteData(): Promise<PersistedData> {
+async function loadRemoteData(userId: string): Promise<PersistedData> {
   const [medicinesSnapshot, activitySnapshot, profileSnapshot] =
     await Promise.all([
-      getDocs(query(medicinesCollectionRef(), orderBy('createdAt', 'desc'))),
-      getDocs(query(activityCollectionRef(), orderBy('date', 'desc'))),
-      getDoc(profileDocRef()),
+      medicinesCollectionRef(userId).orderBy('createdAt', 'desc').get(),
+      activityCollectionRef(userId).orderBy('date', 'desc').get(),
+      profileDocRef(userId).get(),
     ]);
 
   return {
@@ -181,158 +382,178 @@ function mergeData(local: PersistedData, remote: PersistedData): PersistedData {
   };
 }
 
-export async function loadPersistedData() {
-  const localData = await loadLocalData();
+/**
+ * Une caché local con los datos remotos del usuario. Si el usuario no
+ * está autenticado, devuelve únicamente lo que haya en AsyncStorage sin
+ * intentar hablar con Firestore. Antes de cargar, ejecuta una migración
+ * única de datos legacy bajo `defaultUser` para no perder el cache de
+ * usuarios que usaron la app antes de la autenticación.
+ *
+ * Importante: si `merged` queda completamente vacío (sin medicinas,
+ * actividad y sin perfil) NO escribimos de vuelta la caché, porque en
+ * ese escenario estamos ante un primer arranque del usuario y no
+ * queremos barrer su caché local previa.
+ */
+export async function loadPersistedData(
+  userId: string | null,
+): Promise<PersistedData> {
+  const localData = await loadLocalData(userId);
+
+  if (!userId) {
+    return localData;
+  }
+
+  await migrateLegacyData(userId);
 
   try {
-    const remoteData = await loadRemoteData();
+    await ensureUserDocument(userId);
+    const remoteData = await loadRemoteData(userId);
     const merged = mergeData(localData, remoteData);
-    await persistLocalData(merged);
+    const hasMergedContent =
+      merged.medicines.length > 0 ||
+      merged.activity.length > 0 ||
+      merged.profile != null;
+    if (hasMergedContent) {
+      await persistLocalData(userId, merged);
+    }
     return merged;
   } catch {
     return localData;
   }
 }
 
-export async function mergeRemoteMedicines(remoteMedicines: Medicine[]) {
-  const local = await loadLocalData();
+export async function mergeRemoteMedicines(
+  userId: string | null,
+  remoteMedicines: Medicine[],
+) {
+  const local = await loadLocalData(userId);
   const remoteIds = new Set(remoteMedicines.map(m => m.id));
 
   const merged = [
-    ...local.medicines.filter(m => !remoteIds.has(m.id)),
+    ...(local.medicines ?? []).filter(m => !remoteIds.has(m.id)),
     ...remoteMedicines,
   ].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
-  await persistLocalData({ medicines: merged });
+  await persistLocalData(userId, { medicines: merged });
   return merged;
 }
 
-export async function mergeRemoteActivity(remoteActivity: ActivityItem[]) {
-  const local = await loadLocalData();
+export async function mergeRemoteActivity(
+  userId: string | null,
+  remoteActivity: ActivityItem[],
+) {
+  const local = await loadLocalData(userId);
   const remoteIds = new Set(remoteActivity.map(a => a.id));
 
   const merged = [
-    ...local.activity.filter(a => !remoteIds.has(a.id)),
+    ...(local.activity ?? []).filter(a => !remoteIds.has(a.id)),
     ...remoteActivity,
   ].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
-  await persistLocalData({ activity: merged });
+  await persistLocalData(userId, { activity: merged });
   return merged;
 }
 
-export async function persistMedicines(medicines: Medicine[]) {
-  await persistLocalData({ medicines });
-  syncCollection(medicinesCollectionRef(), medicines).catch(() => {});
+export async function persistMedicines(
+  userId: string | null,
+  medicines: Medicine[],
+) {
+  await persistLocalData(userId, { medicines });
+  if (!userId) {
+    return;
+  }
+  await syncCollection(medicinesCollectionRef(userId), medicines, userId);
 }
 
-export async function persistActivity(activity: ActivityItem[]) {
-  await persistLocalData({ activity });
-  syncCollection(activityCollectionRef(), activity).catch(() => {});
+export async function persistActivity(
+  userId: string | null,
+  activity: ActivityItem[],
+) {
+  await persistLocalData(userId, { activity });
+  if (!userId) {
+    return;
+  }
+  await syncCollection(activityCollectionRef(userId), activity, userId);
 }
 
-export async function persistProfile(profile: UserProfile) {
-  await persistLocalData({ profile });
-  ensureUserDocument()
-    .then(() => setDoc(profileDocRef(), profile))
-    .catch(() => {});
+export async function persistProfile(
+  userId: string | null,
+  profile: UserProfile,
+) {
+  await persistLocalData(userId, { profile });
+  if (!userId) {
+    return;
+  }
+  await ensureUserDocument(userId);
+  await profileDocRef(userId).set(profile);
 }
 
 export function subscribeToMedicines(
+  userId: string | null,
   onUpdate: (medicines: Medicine[]) => void,
   onError?: (error: Error) => void,
-): Unsubscribe {
-  const q = query(medicinesCollectionRef(), orderBy('createdAt', 'desc'));
-  return onSnapshot(
-    q,
-    snapshot => {
-      const medicines = snapshot.docs.map(d =>
-        normalizeMedicine(d.data() as Medicine),
-      );
-      onUpdate(medicines);
-    },
-    onError,
-  );
+): () => void {
+  if (!userId) {
+    return () => {};
+  }
+  return medicinesCollectionRef(userId)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(
+      snapshot => {
+        const medicines = snapshot.docs.map(d =>
+          normalizeMedicine(d.data() as Medicine),
+        );
+        onUpdate(medicines);
+      },
+      onError,
+    );
 }
 
-export const CATALOG_STORAGE_KEY = '@medicare/medicationCatalog';
-
-export async function seedMedicationCatalogIfEmpty(): Promise<MedicationSuggestion[]> {
+export async function seedMedicationCatalogIfEmpty(
+  _userId: string | null,
+): Promise<MedicationSuggestion[]> {
+  // El catálogo es contenido estático que se envía con la app. Sólo lo
+  // mantenemos en AsyncStorage para permitir overrides manuales en el
+  // futuro (p. ej. desde un panel admin). No hay versión remota: antes
+  // intentábamos sincronizarlo bajo `appUsers/_shared/medicationCatalog`,
+  // pero las reglas de seguridad típicas del esquema (`request.auth.uid
+  // == userId`) niegan el acceso a cualquier UID distinto a `_shared`,
+  // lo que disparaba `permission-denied` cada vez que la app abría y
+  // se acumulaba en el toast de error.
   try {
-    const remoteSnapshot = await getDocs(catalogCollectionRef());
-    if (!remoteSnapshot.empty) {
-      const remote: MedicationSuggestion[] = remoteSnapshot.docs.map(
-        d => d.data() as MedicationSuggestion,
-      );
-      await AsyncStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(remote));
-      return remote;
+    const local = await AsyncStorage.getItem(CATALOG_STORAGE_KEY);
+    if (local) {
+      return JSON.parse(local) as MedicationSuggestion[];
     }
-    await Promise.all(
-      MEDICATION_DATABASE.map(med =>
-        setDoc(doc(catalogCollectionRef(), med.name), med).catch(() => {}),
-      ),
-    );
     await AsyncStorage.setItem(
       CATALOG_STORAGE_KEY,
       JSON.stringify(MEDICATION_DATABASE),
     );
     return MEDICATION_DATABASE;
   } catch {
-    const local = await AsyncStorage.getItem(CATALOG_STORAGE_KEY);
-    if (local) {
-      return JSON.parse(local) as MedicationSuggestion[];
-    }
     return MEDICATION_DATABASE;
   }
 }
 
-export async function loadMedicationCatalog(): Promise<MedicationSuggestion[]> {
-  try {
-    const remoteSnapshot = await getDocs(catalogCollectionRef());
-    if (!remoteSnapshot.empty) {
-      const remote: MedicationSuggestion[] = remoteSnapshot.docs.map(
-        d => d.data() as MedicationSuggestion,
-      );
-      await AsyncStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(remote));
-      return remote;
-    }
-  } catch {}
-  const local = await AsyncStorage.getItem(CATALOG_STORAGE_KEY);
-  if (local) {
-    return JSON.parse(local) as MedicationSuggestion[];
-  }
-  return [];
-}
-
-export function subscribeToMedicationCatalog(
-  onUpdate: (catalog: MedicationSuggestion[]) => void,
-  onError?: (error: Error) => void,
-): Unsubscribe {
-  return onSnapshot(
-    catalogCollectionRef(),
-    snapshot => {
-      const catalog = snapshot.docs.map(d => d.data() as MedicationSuggestion);
-      onUpdate(catalog);
-      AsyncStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(catalog)).catch(() => {});
-    },
-    onError,
-  );
-}
-
 export function subscribeToActivity(
+  userId: string | null,
   onUpdate: (activity: ActivityItem[]) => void,
   onError?: (error: Error) => void,
-): Unsubscribe {
-  const q = query(activityCollectionRef(), orderBy('date', 'desc'));
-  return onSnapshot(
-    q,
-    snapshot => {
-      const items = snapshot.docs.map(d => d.data() as ActivityItem);
-      onUpdate(items);
-    },
-    onError,
-  );
+): () => void {
+  if (!userId) {
+    return () => {};
+  }
+  return activityCollectionRef(userId)
+    .orderBy('date', 'desc')
+    .onSnapshot(
+      snapshot => {
+        const items = snapshot.docs.map(d => d.data() as ActivityItem);
+        onUpdate(items);
+      },
+      onError,
+    );
 }

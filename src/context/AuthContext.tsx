@@ -8,7 +8,13 @@ import React, {
   useState,
 } from 'react';
 import { Alert } from 'react-native';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithCredential,
+  signOut,
+  GoogleAuthProvider,
+} from '@react-native-firebase/auth';
 import {
   GoogleSignin,
   isErrorWithCode,
@@ -48,7 +54,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function mapFirebaseUser(firebaseUser: FirebaseAuthTypes.User): AuthUser {
+function mapFirebaseUser(firebaseUser: { uid: string; email: string | null; displayName: string | null; photoURL: string | null; providerData: Array<{ providerId: string; displayName?: string | null; photoURL?: string | null }> }): AuthUser {
   const googleProvider = firebaseUser.providerData.find(
     p => p.providerId === 'google.com',
   );
@@ -76,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // the previous user (or null) immediately on subscribe — that's how we
   // initialize. No need for an explicit signInSilently().
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(async firebaseUser => {
+    const unsubscribe = onAuthStateChanged(getAuth(), async firebaseUser => {
       if (firebaseUser) {
         setUser(mapFirebaseUser(firebaseUser));
         try {
@@ -142,11 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Construimos la credencial con ambos tokens para que
       // signInWithCredential pueda asociar al usuario con un UID estable en
       // Firebase Auth.
-      const credential = auth.GoogleAuthProvider.credential(
+      const credential = GoogleAuthProvider.credential(
         idToken,
         accessToken,
       );
-      await auth().signInWithCredential(credential);
+      await signInWithCredential(getAuth(), credential);
       // onAuthStateChanged will fire and update state; nothing else to do.
     } catch (error) {
       if (isErrorWithCode(error)) {
@@ -196,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error cerrando sesión de Google:', error);
     }
     try {
-      await auth().signOut();
+      await signOut(getAuth());
     } catch (error) {
       console.error('Error cerrando sesión de Firebase:', error);
     }

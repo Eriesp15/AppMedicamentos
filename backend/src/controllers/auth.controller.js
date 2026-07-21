@@ -1,4 +1,4 @@
-const {loginUser, registerUser} = require('../services/auth.service');
+const {loginUser, registerUser, syncFirebaseUser} = require('../services/auth.service');
 
 function register(req, res) {
   const {fullName, email, password} = req.body || {};
@@ -34,4 +34,18 @@ function login(req, res) {
   }
 }
 
-module.exports = {register, login};
+function firebaseSync(req, res) {
+  const {uid, email, fullName} = req.body || {};
+  if (!uid) {
+    return res.status(400).json({message: 'MISSING_UID'});
+  }
+
+  try {
+    const result = syncFirebaseUser({uid, email, fullName});
+    return res.status(200).json(result);
+  } catch {
+    return res.status(500).json({message: 'INTERNAL_SERVER_ERROR'});
+  }
+}
+
+module.exports = {register, login, firebaseSync};

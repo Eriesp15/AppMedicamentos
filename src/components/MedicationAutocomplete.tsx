@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
@@ -86,13 +85,10 @@ export function MedicationAutocomplete({
         onChangeText={onChangeText}
       />
       {showSuggestions && filtered.length > 0 && (
-        <FlatList
-          style={appStyles.autocompleteList}
-          data={filtered}
-          keyExtractor={item => item.name}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
+        <View style={appStyles.autocompleteList}>
+          {filtered.map(item => (
             <TouchableOpacity
+              key={item.name}
               style={appStyles.autocompleteItem}
               onPress={() => selectMedication(item)}
             >
@@ -106,8 +102,8 @@ export function MedicationAutocomplete({
                 </Text>
               </View>
             </TouchableOpacity>
-          )}
-        />
+          ))}
+        </View>
       )}
       {showSuggestions && form.name.trim().length > 0 && filtered.length === 0 && (
         <View style={appStyles.autocompleteList}>

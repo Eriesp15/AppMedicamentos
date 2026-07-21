@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { DEFAULT_PROFILE, EMPTY_MEDICINE_FORM } from '../constants/data';
 import { useAppSettings } from '../context/AppSettingsContext';
+import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import {
   cancelMedicineAlarms,
   scheduleAllMedicineAlarms,
@@ -26,7 +28,6 @@ import {
   persistProfile,
   seedMedicationCatalogIfEmpty,
   subscribeToActivity,
-  subscribeToMedicationCatalog,
   subscribeToMedicines,
 } from '../storage/medicationStorage';
 import {
@@ -38,6 +39,9 @@ import {
 
 export function useMedicationManager() {
   const { settings } = useAppSettings();
+  const { handleError } = useToast();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingMedicineId, setEditingMedicineId] = useState<string | null>(
@@ -52,64 +56,128 @@ export function useMedicationManager() {
   const [medicationCatalog, setMedicationCatalog] = useState<MedicationSuggestion[]>([]);
   const [hasLoadedPersistedData, setHasLoadedPersistedData] = useState(false);
 
-  const isRemoteMedicinesUpdate = useRef(false);
-  const isRemoteActivityUpdate = useRef(false);
   const medicinesUnsubscribe = useRef<(() => void) | null>(null);
   const activityUnsubscribe = useRef<(() => void) | null>(null);
-  const catalogUnsubscribe = useRef<(() => void) | null>(null);
   const pendingDeleteIds = useRef<Set<string>>(new Set());
   const schedulingGeneration = useRef(0);
+  const syncingMedicinesFromRemote = useRef(false);
+  const syncingActivityFromRemote = useRef(false);
+
+  // Reset visible state when the authenticated user changes so two accounts
+  // en el mismo dispositivo no ven los medicamentos del otro mientras se
+  // carga la caché del usuario recién activo.
+  useEffect(() => {
+    setMedicines([]);
+    setActivity([]);
+    setProfile(DEFAULT_PROFILE);
+    setMedicationCatalog([]);
+    setHasLoadedPersistedData(false);
+  }, [userId]);
 
   useEffect(() => {
+    let cancelled = false;
     const loadData = async () => {
       try {
-        const data = await loadPersistedData();
+        // `loadPersistedData` ya invoca `ensureUserDocument` y la migración
+        // de datos legacy una sola vez por usuario; aquí sólo necesitamos
+        // pintar el resultado en pantalla.
+        const data = await loadPersistedData(userId);
+        if (cancelled) {
+          return;
+        }
         setMedicines(data.medicines);
         setActivity(data.activity);
         if (data.profile) {
           setProfile(data.profile);
         }
-        const catalog = await seedMedicationCatalogIfEmpty();
+        const catalog = await seedMedicationCatalogIfEmpty(userId);
+        if (cancelled) {
+          return;
+        }
         setMedicationCatalog(catalog);
-      } catch {
-        Alert.alert('Error', 'No se pudo cargar la informacion guardada.');
+      } catch (err) {
+        // `loadPersistedData` ya absorbe errores remotos internamente y
+        // devuelve los datos locales; solo entra aquí cuando AsyncStorage
+        // tampoco puede leer — es un fallo crítico.
+        handleError(err, 'useMedicationManager', {
+          context: 'loadPersistedData',
+          alertMessage:
+            'No pudimos leer tu información guardada. Reinicia la app o vuelve a iniciar sesión.',
+          toastMessage:
+            'No se pudo leer la información local del dispositivo.',
+        });
       } finally {
-        setHasLoadedPersistedData(true);
+        if (!cancelled) {
+          setHasLoadedPersistedData(true);
+        }
       }
     };
     loadData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [handleError, userId]);
 
-useEffect(() => {
-    if (!hasLoadedPersistedData) {
+  useEffect(() => {
+    if (!hasLoadedPersistedData || !userId) {
       return;
     }
 
     medicinesUnsubscribe.current = subscribeToMedicines(
+      userId,
       async remoteMedicines => {
-        const merged = remoteMedicines
-          .filter(m => !pendingDeleteIds.current.has(m.id))
-          .sort(
+        const filtered = remoteMedicines.filter(
+          m => !pendingDeleteIds.current.has(m.id),
+        );
+        syncingMedicinesFromRemote.current = true;
+        setMedicines(current => {
+          const remoteIds = new Set(filtered.map(m => m.id));
+          const localOnly = current.filter(
+            m => !remoteIds.has(m.id) && !pendingDeleteIds.current.has(m.id),
+          );
+          return [
+            ...localOnly,
+            ...filtered,
+          ].sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
-        await persistLocalData({ medicines: merged });
-        setMedicines(merged);
+        });
+        persistLocalData(userId, { medicines: filtered }).finally(() => {
+          syncingMedicinesFromRemote.current = false;
+        });
       },
-      () => {},
-    );
-
-    catalogUnsubscribe.current = subscribeToMedicationCatalog(
-      catalog => setMedicationCatalog(catalog),
-      () => {},
+      err => {
+        handleError(err, 'useMedicationManager', {
+          context: 'subscribeToMedicines',
+          toastMessage:
+            'Conexión con la nube interrumpida. Trabajando con datos locales.',
+        });
+      },
     );
 
     activityUnsubscribe.current = subscribeToActivity(
+      userId,
       async remoteActivity => {
-        const merged = await mergeRemoteActivity(remoteActivity);
-        setActivity(merged);
+        try {
+          syncingActivityFromRemote.current = true;
+          const merged = await mergeRemoteActivity(userId, remoteActivity);
+          setActivity(merged);
+          syncingActivityFromRemote.current = false;
+        } catch (err) {
+          syncingActivityFromRemote.current = false;
+          handleError(err, 'useMedicationManager', {
+            context: 'mergeRemoteActivity',
+          });
+        }
       },
-      () => {},
+      err => {
+        handleError(err, 'useMedicationManager', {
+          context: 'subscribeToActivity',
+          toastMessage:
+            'Conexión con la nube interrumpida para el historial.',
+        });
+      },
     );
 
     return () => {
@@ -119,31 +187,56 @@ useEffect(() => {
       if (activityUnsubscribe.current) {
         activityUnsubscribe.current();
       }
-      if (catalogUnsubscribe.current) {
-        catalogUnsubscribe.current();
-      }
     };
-  }, [hasLoadedPersistedData]);
+  }, [handleError, hasLoadedPersistedData, userId]);
 
   useEffect(() => {
-    persistMedicines(medicines).catch(() => {});
-  }, [medicines]);
-
-  useEffect(() => {
-    persistActivity(activity).catch(() => {});
-  }, [activity]);
-
-  useEffect(() => {
-    if (hasLoadedPersistedData) {
-      persistProfile(profile).catch(() => {});
+    if (!hasLoadedPersistedData || !userId || syncingMedicinesFromRemote.current) {
+      return;
     }
-  }, [hasLoadedPersistedData, profile]);
+    persistMedicines(userId, medicines).catch(err => {
+      handleError(err, 'useMedicationManager', {
+        context: 'persistMedicines',
+        toastMessage:
+          'No se pudo guardar la lista de medicamentos en la nube.',
+      });
+    });
+  }, [handleError, hasLoadedPersistedData, medicines, userId]);
+
+  useEffect(() => {
+    if (!hasLoadedPersistedData || !userId || syncingActivityFromRemote.current) {
+      return;
+    }
+    persistActivity(userId, activity).catch(err => {
+      handleError(err, 'useMedicationManager', {
+        context: 'persistActivity',
+        toastMessage: 'No se pudo guardar el historial en la nube.',
+      });
+    });
+  }, [activity, handleError, hasLoadedPersistedData, userId]);
+
+  useEffect(() => {
+    if (hasLoadedPersistedData && userId) {
+      persistProfile(userId, profile).catch(err => {
+        handleError(err, 'useMedicationManager', {
+          context: 'persistProfile',
+          toastMessage: 'No se pudo guardar tu perfil en la nube.',
+        });
+      });
+    }
+  }, [hasLoadedPersistedData, handleError, profile, userId]);
 
   useEffect(() => {
     if (!hasLoadedPersistedData) return;
     const gen = ++schedulingGeneration.current;
-    scheduleAllMedicineAlarms(medicines, settings, () => schedulingGeneration.current !== gen).catch(() => {});
-  }, [hasLoadedPersistedData, medicines, settings]);
+    scheduleAllMedicineAlarms(medicines, settings, () => schedulingGeneration.current !== gen).catch(err => {
+      handleError(err, 'useMedicationManager', {
+        context: 'scheduleAllMedicineAlarms',
+        toastMessage:
+          'No se pudieron reprogramar las alarmas. Verifica permisos en Ajustes.',
+      });
+    });
+  }, [hasLoadedPersistedData, handleError, medicines, settings]);
 
   const todayKey = useMemo(() => new Date().toDateString(), []);
 
@@ -239,7 +332,7 @@ useEffect(() => {
     setShowFormModal(true);
   };
 
-  const saveMedicine = () => {
+  const saveMedicine = async () => {
     const sanitizedForm: MedicineForm = {
       ...form,
       name: sanitizeMedicineName(form.name).trim(),
@@ -278,8 +371,9 @@ useEffect(() => {
         ),
       );
     } else {
+      const newId = `${Date.now()}`;
       const newMedicine: Medicine = {
-        id: `${Date.now()}`,
+        id: newId,
         ...sanitizedForm,
         treatmentDays: treatmentDaysNum,
         createdAt: new Date().toISOString(),
@@ -302,23 +396,34 @@ useEffect(() => {
        {
          text: 'Eliminar',
          style: 'destructive',
-         onPress: () => {
-           const deletedAt = Date.now();
-           pendingDeleteIds.current.add(medicineId);
+          onPress: () => {
+            pendingDeleteIds.current.add(medicineId);
            setMedicines(current =>
              current.filter(item => item.id !== medicineId),
            );
            setActivity(current =>
              current.filter(item => item.medicationId !== medicineId),
            );
-           cancelMedicineAlarms(medicineId).catch(() => {});
-           deleteMedicinesFromFirestore([medicineId])
-             .catch(() => {})
-             .finally(() => {
-               setTimeout(() => {
-                 pendingDeleteIds.current.delete(medicineId);
-               }, 3000);
+           cancelMedicineAlarms(medicineId).catch(err => {
+             handleError(err, 'useMedicationManager', {
+               context: 'cancelMedicineAlarms',
+               toastMessage:
+                 'No se pudo cancelar la alarma. Revisa los permisos desde Ajustes.',
              });
+           });
+            deleteMedicinesFromFirestore(userId, [medicineId])
+              .catch(err => {
+                handleError(err, 'useMedicationManager', {
+                  context: 'deleteMedicinesFromFirestore',
+                  toastMessage:
+                    'No se pudo borrar el medicamento en la nube. Se reintentará automáticamente.',
+                });
+              })
+              .finally(() => {
+                setTimeout(() => {
+                  pendingDeleteIds.current.delete(medicineId);
+                }, 3000);
+              });
          },
        },
      ]);

@@ -9,6 +9,7 @@ import {
   useAppSettings,
 } from './src/context/AppSettingsContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { ToastProvider } from './src/context/ToastContext';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { useMedicationManager } from './src/hooks/useMedicationManager';
 import { AddMedicineScreen } from './src/screens/AddMedicineScreen';
@@ -308,12 +309,18 @@ function AuthGate({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
 }
 
 function App(props: InitialAlarmProps) {
+  // Orden importante: AppSettingsProvider antes de ToastProvider porque
+  // `ToastCard` lee la paleta desde `useAppSettings()`. Si lo pusiéramos
+  // por encima, cualquier toast lanzaría "useAppSettings debe usarse
+  // dentro de AppSettingsProvider".
   return (
     <SafeAreaProvider>
       <AppSettingsProvider>
-        <AuthProvider>
-          <AuthGate initialAlarm={props} />
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <AuthGate initialAlarm={props} />
+          </AuthProvider>
+        </ToastProvider>
       </AppSettingsProvider>
     </SafeAreaProvider>
   );

@@ -52,6 +52,42 @@ function loginUser({email, password}) {
   };
 }
 
+function syncFirebaseUser({uid, email, fullName}) {
+  const normalizedEmail = (email || '').toLowerCase().trim();
+  let user = db.users.find(item => item.id === uid);
+
+  if (!user) {
+    user = {
+      id: uid,
+      fullName: (fullName || email || 'Usuario').trim(),
+      email: normalizedEmail,
+      password: '',
+      createdAt: new Date().toISOString(),
+    };
+    db.users.push(user);
+
+    db.profiles.push({
+      userId: uid,
+      fullName: user.fullName,
+      age: '',
+      phone: '',
+      emergencyContact: '',
+      bloodType: '',
+      allergies: '',
+      chronicConditions: '',
+    });
+  }
+
+  return {
+    user: {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+    },
+    token: buildToken(user),
+  };
+}
+
 function getUserFromToken(token) {
   try {
     const decoded = JSON.parse(Buffer.from(token, 'base64url').toString('utf8'));
@@ -62,4 +98,4 @@ function getUserFromToken(token) {
   }
 }
 
-module.exports = {registerUser, loginUser, getUserFromToken};
+module.exports = {registerUser, loginUser, syncFirebaseUser, getUserFromToken};

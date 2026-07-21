@@ -7,12 +7,30 @@ import {
   UserProfile,
 } from '../types/medication';
 
+// Claves globales (no asociadas a un usuario): ajustes y catálogo. Las
+// claves de medicamentos, actividad y perfil se generan por usuario con
+// `userStorageKeys(userId)` para que dos cuentas distintas en el mismo
+// dispositivo no compartan caché ni reemplacen los datos del otro.
 export const STORAGE_KEYS = {
-  MEDICINES: '@medicare/medicines',
-  ACTIVITY: '@medicare/activity',
-  PROFILE: '@medicare/profile',
   APP_SETTINGS: '@medicare/app_settings',
-};
+} as const;
+
+// El catálogo de medicamentos es contenido compartido entre usuarios.
+// Vive en una clave AsyncStorage única para no duplicarlo por cuenta.
+export const CATALOG_STORAGE_KEY = '@medicare/medicationCatalog';
+
+/**
+ * Genera un namespace estable de claves AsyncStorage por usuario Firebase.
+ * Las claves incluyen el UID directamente para que, al cambiar de cuenta,
+ * veamos los datos de la cuenta activa sin migrar manualmente.
+ */
+export function userStorageKeys(userId: string) {
+  return {
+    MEDICINES: `@medicare/${userId}/medicines`,
+    ACTIVITY: `@medicare/${userId}/activity`,
+    PROFILE: `@medicare/${userId}/profile`,
+  };
+}
 
 export const TAB_ITEMS: { id: AppTab; label: string; icon: string }[] = [
   { id: 'home', label: 'Inicio', icon: '⌂' },

@@ -9,6 +9,7 @@ import notifee, {
   TriggerType,
 } from '@notifee/react-native';
 import { Platform } from 'react-native';
+import { getAuth } from '@react-native-firebase/auth';
 import { ALARM_SOUND_OPTIONS } from '../constants/data';
 import {
   loadPersistedData,
@@ -302,7 +303,17 @@ export async function markNotificationDoseAsTaken(data: Record<string, unknown>)
     return;
   }
 
-  const persisted = await loadPersistedData();
+  // Si nadie está autenticado no podemos guardar la toma bajo ningún UID
+  // (las funciones de almacenamiento exigen userId tras la introducción
+  // de multi-cuenta). Como no se puede programar una alarma sin sesión,
+  // llegar aquí sin usuario indica un estado inválido: lo ignoramos en
+  // silencio en lugar de tirar el evento.
+  const userId = getAuth().currentUser?.uid;
+  if (!userId) {
+    return;
+  }
+
+  const persisted = await loadPersistedData(userId);
   const todayKey = new Date().toDateString();
   const alreadyLogged = persisted.activity.some(
     item =>
@@ -324,7 +335,7 @@ export async function markNotificationDoseAsTaken(data: Record<string, unknown>)
     taken: true,
   };
 
-  await persistActivity([item, ...persisted.activity]);
+  await persistActivity(userId, [item, ...persisted.activity]);
 }
 
 export async function snoozeNotification(data: Record<string, unknown>) {
