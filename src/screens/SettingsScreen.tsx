@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import notifee, {AuthorizationStatus} from '@notifee/react-native';
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {useAuth} from '../context/AuthContext';
@@ -160,8 +161,20 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
   const [permBattery, setPermBattery] = useState(true);
   const [permExactAlarm, setPermExactAlarm] = useState(true);
   const [permFullScreen, setPermFullScreen] = useState(true);
+  const [permCalendar, setPermCalendar] = useState(false);
+  const [loadingCalendarPerm, setLoadingCalendarPerm] = useState(false);
 
   const checkPermissions = useCallback(() => {
+    try {
+      const currentUser = GoogleSignin.getCurrentUser();
+      const hasScope = currentUser?.scopes?.includes(
+        'https://www.googleapis.com/auth/calendar.events.owned',
+      );
+      setPermCalendar(!!hasScope);
+    } catch {
+      setPermCalendar(false);
+    }
+
     if (Platform.OS !== 'android') return;
     notifee.getNotificationSettings().then(sett => {
       setPermNotifications(sett.authorizationStatus >= AuthorizationStatus.AUTHORIZED);
@@ -170,6 +183,44 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
     checkBatteryOptimization().then(setPermBattery).catch(() => {});
     checkExactAlarmPermission().then(setPermExactAlarm).catch(() => {});
     checkFullScreenIntentPermission().then(setPermFullScreen).catch(() => {});
+  }, []);
+
+  const handleRequestCalendarPermission = useCallback(async () => {
+    setLoadingCalendarPerm(true);
+    try {
+      const response = await GoogleSignin.addScopes({
+        scopes: [
+          'https://www.googleapis.com/auth/calendar.events.owned',
+        ],
+      });
+
+      const currentUser = GoogleSignin.getCurrentUser();
+      const hasScope =
+        currentUser?.scopes?.includes(
+          'https://www.googleapis.com/auth/calendar.events.owned',
+        ) || (response && response.type === 'success');
+
+      if (hasScope) {
+        setPermCalendar(true);
+        Alert.alert(
+          'Google Calendar',
+          'Permiso de Google Calendar concedido correctamente.',
+        );
+      } else {
+        Alert.alert(
+          'Google Calendar',
+          'No se pudo conceder el permiso de Google Calendar.',
+        );
+      }
+    } catch (error) {
+      console.error('Error al solicitar permiso de Google Calendar:', error);
+      Alert.alert(
+        'Error',
+        'Ocurrió un problema al solicitar permisos de Google Calendar. Asegúrate de haber iniciado sesión con tu cuenta de Google.',
+      );
+    } finally {
+      setLoadingCalendarPerm(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -183,11 +234,15 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
     hint,
     granted,
     onOpen,
+    buttonText = 'ABRIR AJUSTES',
+    disabled = false,
   }: {
     label: string;
     hint: string;
     granted: boolean;
     onOpen: () => void;
+    buttonText?: string;
+    disabled?: boolean;
   }) => (
     <View style={[styles.settingsRow, {marginBottom: 6}]}>
       <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
@@ -206,14 +261,15 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
           {!granted && (
             <TouchableOpacity
               onPress={onOpen}
+              disabled={disabled}
               style={{
-                backgroundColor: '#2855D9',
+                backgroundColor: disabled ? '#A0A0A0' : '#2855D9',
                 borderRadius: 8,
                 paddingHorizontal: 10,
                 paddingVertical: 5,
               }}>
               <Text style={{color: '#FFF', fontSize: 11, fontWeight: 'bold'}}>
-                ABRIR AJUSTES
+                {buttonText}
               </Text>
             </TouchableOpacity>
           )}
@@ -546,6 +602,15 @@ export function SettingsScreen({visible, onClose, onOpenProfile}: Props) {
             hint="Evita que el sistema detenga las alarmas para ahorrar bateria."
             granted={permBattery}
             onOpen={openBatteryOptimizationSettings}
+          />
+
+          <PermRow
+            label="Google Calendar"
+            hint="Permite solicitar permisos para vincular tus eventos y tomas de medicamentos en Google Calendar."
+            granted={permCalendar}
+            onOpen={handleRequestCalendarPermission}
+            buttonText={loadingCalendarPerm ? 'SOLICITANDO...' : 'SOLICITAR PERMISO'}
+            disabled={loadingCalendarPerm}
           />
 
           <Text style={styles.settingsSectionTitle}>CUENTA</Text>
