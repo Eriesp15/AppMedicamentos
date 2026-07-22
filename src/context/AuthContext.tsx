@@ -83,7 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // the previous user (or null) immediately on subscribe — that's how we
   // initialize. No need for an explicit signInSilently().
   useEffect(() => {
+    // Safety timeout: if onAuthStateChanged doesn't fire within 5 seconds
+    // (e.g. very slow network), stop showing the loading spinner so the app
+    // can still render with whatever cached state is available.
+    const safetyTimeout = setTimeout(() => {
+      setInitializing(false);
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(getAuth(), async firebaseUser => {
+      clearTimeout(safetyTimeout);
       if (firebaseUser) {
         setUser(mapFirebaseUser(firebaseUser));
         try {
@@ -98,7 +106,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setInitializing(false);
     });
-    return unsubscribe;
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {

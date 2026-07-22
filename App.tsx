@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { useMedicationManager } from './src/hooks/useMedicationManager';
+import { useOfflineStatus } from './src/hooks/useOfflineStatus';
 import { AddMedicineScreen } from './src/screens/AddMedicineScreen';
 import { AlarmScreen, AlarmScreenData } from './src/screens/AlarmScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -36,7 +37,8 @@ type InitialAlarmProps = Partial<AlarmScreenData> & {
 };
 
 function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
-  const { styles, statusBarStyle, statusBarBg } = useAppSettings();
+  const { styles, statusBarStyle, statusBarBg, palette } = useAppSettings();
+  const isOffline = useOfflineStatus();
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [activeAlarm, setActiveAlarm] = useState<AlarmScreenData | null>(null);
@@ -192,6 +194,7 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
         translucent={false}
       />
       <SafeAreaView edges={['top']} style={styles.container}>
+        
         {activeTab === 'home' && (
           <HomeScreen
             medicines={medicines}

@@ -11,6 +11,17 @@ import firestore, {
   FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 
+const OFFLINE_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('offline-timeout')), ms),
+    ),
+  ]);
+}
+
 // React Native Firebase auto-initialises from google-services.json; we
 // lazily obtain the Firestore instance so it's guaranteed to be ready
 // regardless of module load order.
@@ -80,21 +91,27 @@ export async function ensureUserDocument(userId: string): Promise<void> {
   const userRef = firestoreDb().collection(USER_COLLECTION).doc(uid);
   const profileRef = userRef.collection('profile').doc(PROFILE_DOCUMENT_ID);
 
-  await userRef.set(
-    {
-      uid,
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: true },
+  await withTimeout(
+    userRef.set(
+      {
+        uid,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    ),
+    OFFLINE_TIMEOUT_MS,
   );
 
-  const existingProfile = await profileRef.get();
+  const existingProfile = await withTimeout(profileRef.get(), OFFLINE_TIMEOUT_MS);
   if (!existingProfile.exists) {
-    await profileRef.set({
-      ...DEFAULT_PROFILE,
-      uid,
-      createdAt: new Date().toISOString(),
-    });
+    await withTimeout(
+      profileRef.set({
+        ...DEFAULT_PROFILE,
+        uid,
+        createdAt: new Date().toISOString(),
+      }),
+      OFFLINE_TIMEOUT_MS,
+    );
   }
 }
 
@@ -303,13 +320,16 @@ async function syncCollection<T extends { id: string }>(
   items: T[],
   userId: string,
 ) {
-  await ensureUserDocument(userId);
-
-  await Promise.all(
-    items.map(item =>
-      collectionRef.doc(item.id).set(item),
-    ),
-  );
+  try {
+    await ensureUserDocument(userId);
+    await Promise.all(
+      items.map(item =>
+        withTimeout(collectionRef.doc(item.id).set(item), OFFLINE_TIMEOUT_MS),
+      ),
+    );
+  } catch {
+    // Offline: data is already saved locally via persistLocalData
+  }
 }
 
 export async function deleteMedicinesFromFirestore(
@@ -320,9 +340,13 @@ export async function deleteMedicinesFromFirestore(
     return;
   }
   const ref = medicinesCollectionRef(userId);
-  await Promise.all(
-    ids.map(id => ref.doc(id).delete()),
-  );
+  try {
+    await Promise.all(
+      ids.map(id => withTimeout(ref.doc(id).delete(), OFFLINE_TIMEOUT_MS)),
+    );
+  } catch {
+    // Offline: deletion will be handled by Firestore when back online
+  }
 }
 
 export async function deleteActivitiesFromFirestore(
@@ -333,17 +357,30 @@ export async function deleteActivitiesFromFirestore(
     return;
   }
   const ref = activityCollectionRef(userId);
-  await Promise.all(
-    ids.map(id => ref.doc(id).delete()),
-  );
+  try {
+    await Promise.all(
+      ids.map(id => withTimeout(ref.doc(id).delete(), OFFLINE_TIMEOUT_MS)),
+    );
+  } catch {
+    // Offline: deletion will be handled by Firestore when back online
+  }
 }
 
 async function loadRemoteData(userId: string): Promise<PersistedData> {
   const [medicinesSnapshot, activitySnapshot, profileSnapshot] =
     await Promise.all([
-      medicinesCollectionRef(userId).orderBy('createdAt', 'desc').get(),
-      activityCollectionRef(userId).orderBy('date', 'desc').get(),
-      profileDocRef(userId).get(),
+      withTimeout(
+        medicinesCollectionRef(userId).orderBy('createdAt', 'desc').get(),
+        OFFLINE_TIMEOUT_MS,
+      ),
+      withTimeout(
+        activityCollectionRef(userId).orderBy('date', 'desc').get(),
+        OFFLINE_TIMEOUT_MS,
+      ),
+      withTimeout(
+        profileDocRef(userId).get(),
+        OFFLINE_TIMEOUT_MS,
+      ),
     ]);
 
   return {
@@ -404,10 +441,10 @@ export async function loadPersistedData(
     return localData;
   }
 
-  await migrateLegacyData(userId);
+  await migrateLegacyData(userId).catch(() => {});
 
   try {
-    await ensureUserDocument(userId);
+    await ensureUserDocument(userId).catch(() => {});
     const remoteData = await loadRemoteData(userId);
     const merged = mergeData(localData, remoteData);
     const hasMergedContent =
@@ -489,8 +526,12 @@ export async function persistProfile(
   if (!userId) {
     return;
   }
-  await ensureUserDocument(userId);
-  await profileDocRef(userId).set(profile);
+  try {
+    await ensureUserDocument(userId);
+    await withTimeout(profileDocRef(userId).set(profile), OFFLINE_TIMEOUT_MS);
+  } catch {
+    // Offline: profile is already saved locally via persistLocalData
+  }
 }
 
 export async function persistProfilePhoto(
@@ -500,8 +541,20 @@ export async function persistProfilePhoto(
   if (!userId) {
     return;
   }
-  await ensureUserDocument(userId);
-  await profileDocRef(userId).set({photo}, {merge: true});
+  const keys = userStorageKeys(userId);
+  const existingRaw = await AsyncStorage.getItem(keys.PROFILE);
+  const existing = existingRaw ? (JSON.parse(existingRaw) as UserProfile) : DEFAULT_PROFILE;
+  const updated: UserProfile = { ...existing, photo };
+  await AsyncStorage.setItem(keys.PROFILE, JSON.stringify(updated));
+  try {
+    await ensureUserDocument(userId);
+    await withTimeout(
+      profileDocRef(userId).set({ photo }, { merge: true }),
+      OFFLINE_TIMEOUT_MS,
+    );
+  } catch {
+    // Offline: photo is already saved locally via AsyncStorage
+  }
 }
 
 export function subscribeToMedicines(
