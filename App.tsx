@@ -42,32 +42,34 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [activeAlarm, setActiveAlarm] = useState<AlarmScreenData | null>(null);
-  const {
-    activeTab,
-    setActiveTab,
-    showFormModal,
-    editingMedicineId,
-    medicines,
-    activity,
-    profile,
-    setProfile,
-    form,
-    setForm,
-    takenTodayCount,
-    adherencePercent,
-    todayStatusByMedication,
-    missedTodayCount,
-    pendingTodayCount,
-    medicationCatalog,
-    openNewForm,
-    closeForm,
-    openEditForm,
-    saveMedicine,
-    deleteMedicine,
-    updateMedicineAlarm,
-    markTaken,
-    markMissed,
-  } = useMedicationManager();
+const {
+     activeTab,
+     setActiveTab,
+     showFormModal,
+     editingMedicineId,
+     medicines,
+     activity,
+     profile,
+     setProfile,
+     form,
+     setForm,
+     takenTodayCount,
+     adherencePercent,
+     missedTodayCount,
+     pendingTodayCount,
+     medicationCatalog,
+     todayDoses,
+     todayStatusByDose,
+     totalDailyDoses,
+     openNewForm,
+     closeForm,
+     openEditForm,
+     saveMedicine,
+     deleteMedicine,
+     updateMedicineAlarm,
+     markTaken,
+     markMissed,
+   } = useMedicationManager();
 
   const activeAlarmRef = useRef(activeAlarm);
   activeAlarmRef.current = activeAlarm;
@@ -170,16 +172,16 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
     setActiveAlarm(null);
   }, []);
 
-  const handleTaken = useCallback((data: AlarmScreenData) => {
-    const medicine = medicines.find(m => m.id === data.medicationId);
-    if (medicine) {
-      markTaken(medicine);
-      cancelMedicineAlarms(medicine.id).catch(() => {});
-    } else {
-      markNotificationDoseAsTaken(data).catch(() => {});
-    }
-    closeActiveAlarm(data);
-  }, [closeActiveAlarm, medicines, markTaken]);
+const handleTaken = useCallback((data: AlarmScreenData) => {
+     const medicine = medicines.find(m => m.id === data.medicationId);
+     if (medicine) {
+       markTaken(medicine, data.scheduledTime);
+       cancelMedicineAlarms(medicine.id).catch(() => {});
+     } else {
+       markNotificationDoseAsTaken(data).catch(() => {});
+     }
+     closeActiveAlarm(data);
+   }, [closeActiveAlarm, medicines, markTaken]);
 
   const handleSnooze = useCallback((data: AlarmScreenData) => {
     snoozeNotification(data).catch(() => {});
@@ -195,22 +197,22 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
       />
       <SafeAreaView edges={['top']} style={styles.container}>
         
-        {activeTab === 'home' && (
-          <HomeScreen
-            medicines={medicines}
-            takenTodayCount={takenTodayCount}
-            adherencePercent={adherencePercent}
-            missedTodayCount={missedTodayCount}
-            pendingTodayCount={pendingTodayCount}
-            todayStatusByMedication={todayStatusByMedication}
-            onMarkTaken={markTaken}
-            onMarkMissed={markMissed}
-            onOpenSettings={openSettings}
-            onOpenProfile={openProfile}
-            profileName={profile.fullName}
-            photo={profile.photo}
-          />
-        )}
+{activeTab === 'home' && (
+           <HomeScreen
+             todayDoses={todayDoses}
+             takenTodayCount={takenTodayCount}
+             adherencePercent={adherencePercent}
+             missedTodayCount={missedTodayCount}
+             pendingTodayCount={pendingTodayCount}
+             todayStatusByDose={todayStatusByDose}
+             onMarkTaken={markTaken}
+             onMarkMissed={markMissed}
+             onOpenSettings={openSettings}
+             onOpenProfile={openProfile}
+             profileName={profile.fullName}
+             photo={profile.photo}
+           />
+         )}
 
         {activeTab === 'medicines' && (
           <MedicinesScreen
@@ -238,32 +240,38 @@ function AppShell({ initialAlarm }: { initialAlarm?: InitialAlarmProps }) {
           />
         )}
 
-        {activeTab === 'schedules' && (
-          <SchedulesScreen
-            medicines={medicines}
-            onOpenSettings={openSettings}
-            onOpenProfile={openProfile}
-            onOpenEditForm={openEditForm}
-            onDeleteMedicine={deleteMedicine}
-            onUpdateMedicineAlarm={updateMedicineAlarm}
-            profileName={profile.fullName}
-            photo={profile.photo}
-          />
-        )}
+{activeTab === 'schedules' && (
+           <SchedulesScreen
+             todayDoses={todayDoses}
+             onOpenSettings={openSettings}
+             onOpenProfile={openProfile}
+             onOpenEditForm={openEditForm}
+             onDeleteMedicine={deleteMedicine}
+             onUpdateMedicineAlarm={updateMedicineAlarm}
+             profileName={profile.fullName}
+             photo={profile.photo}
+             todayStatusByDose={todayStatusByDose}
+             onMarkTaken={markTaken}
+             onMarkMissed={markMissed}
+           />
+         )}
 
-        {activeTab === 'tracking' && (
-          <TrackingScreen
-            medicines={medicines}
-            activities={activity}
-            takenTodayCount={takenTodayCount}
-            missedTodayCount={missedTodayCount}
-            adherencePercent={adherencePercent}
-            onOpenSettings={openSettings}
-            onOpenProfile={openProfile}
-            profileName={profile.fullName}
-            photo={profile.photo}
-          />
-        )}
+{activeTab === 'tracking' && (
+           <TrackingScreen
+             medicines={medicines}
+             activities={activity}
+             takenTodayCount={takenTodayCount}
+             missedTodayCount={missedTodayCount}
+             adherencePercent={adherencePercent}
+             todayDoses={todayDoses}
+             todayStatusByDose={todayStatusByDose}
+             totalDailyDoses={totalDailyDoses}
+             onOpenSettings={openSettings}
+             onOpenProfile={openProfile}
+             profileName={profile.fullName}
+             photo={profile.photo}
+           />
+         )}
 
         <BottomTabs activeTab={activeTab} onPress={setActiveTab} />
 

@@ -20,17 +20,17 @@ import {AppIcon} from '../components/AppIcon';
 import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
 import {FREQUENCIES} from '../constants/data';
-import {Medicine} from '../types/medication';
+import {DoseEvent, Medicine} from '../types/medication';
 
 type Props = {
-  medicines: Medicine[];
+  todayDoses: DoseEvent[];
   takenTodayCount: number;
   adherencePercent: number;
   missedTodayCount: number;
   pendingTodayCount: number;
-  todayStatusByMedication: Record<string, 'taken' | 'missed'>;
-  onMarkTaken: (medicine: Medicine) => void;
-  onMarkMissed: (medicine: Medicine) => void;
+  todayStatusByDose: Record<string, 'taken' | 'missed'>;
+  onMarkTaken: (medicine: Medicine, scheduledTime: string) => void;
+  onMarkMissed: (medicine: Medicine, scheduledTime: string) => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   profileName: string;
@@ -226,12 +226,12 @@ function getMedicineTheme(name: string, startTime: string, index: number) {
 }
 
 export function HomeScreen({
-  medicines,
+  todayDoses,
   takenTodayCount,
   adherencePercent,
   missedTodayCount,
   pendingTodayCount,
-  todayStatusByMedication,
+  todayStatusByDose,
   onMarkTaken,
   onMarkMissed,
   onOpenSettings,
@@ -240,60 +240,59 @@ export function HomeScreen({
   photo,
 }: Props) {
   const {palette, styles: appStyles} = useAppSettings();
-  const missedMedicines = medicines.filter(
-    item => todayStatusByMedication[item.id] === 'missed',
-  );
-  const pendingMedicines = medicines.filter(item => !todayStatusByMedication[item.id]);
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const nextMedicine = pendingMedicines.length === 0
+  const doseKeyOf = (medicineId: string, st: string) => `${medicineId}#${st}`;
+
+  const getDoseDiff = (timeStr: string) => {
+    const [h, min] = timeStr.split(':').map(Number);
+    const medicineMinutes = h * 60 + min;
+    let diff = medicineMinutes - currentMinutes;
+    if (diff < 0) { diff += 1440; }
+    return diff;
+  };
+
+  const sortedDoses = [...todayDoses].sort((a, b) => {
+    return getDoseDiff(a.scheduledTime) - getDoseDiff(b.scheduledTime);
+  });
+
+  const missedDoses = todayDoses.filter(
+    d => todayStatusByDose[doseKeyOf(d.medicine.id, d.scheduledTime)] === 'missed',
+  );
+  const pendingDoses = todayDoses.filter(
+    d => !todayStatusByDose[doseKeyOf(d.medicine.id, d.scheduledTime)],
+  );
+  const nextDose = pendingDoses.length === 0
     ? undefined
-    : pendingMedicines
-        .map(m => {
-          const [h, min] = m.startTime.split(':').map(Number);
-          const medicineMinutes = h * 60 + min;
-          let diff = medicineMinutes - currentMinutes;
-          if (diff < 0) diff += 1440;
-          return {m, diff};
+    : pendingDoses
+        .map(d => {
+          const diff = getDoseDiff(d.scheduledTime);
+          return {d, diff};
         })
-        .sort((a, b) => a.diff - b.diff)[0].m;
+        .sort((a, b) => a.diff - b.diff)[0].d;
   const todayLabel = new Intl.DateTimeFormat('es-BO', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   }).format(new Date());
 
-  const getDoseDiff = (timeStr: string) => {
-    const [h, min] = timeStr.split(':').map(Number);
-    const medicineMinutes = h * 60 + min;
-    let diff = medicineMinutes - currentMinutes;
-    if (diff < 0) {
-      diff += 1440; // wrap around to tomorrow
-    }
-    return diff;
-  };
-
-  const sortedMedicines = [...medicines].sort((a, b) => {
-    return getDoseDiff(a.startTime) - getDoseDiff(b.startTime);
-  });
-
-  const handleCardPress = (item: Medicine) => {
-    const status = todayStatusByMedication[item.id];
+  const handleCardPress = (medicine: Medicine, scheduledTime: string) => {
+    const status = todayStatusByDose[doseKeyOf(medicine.id, scheduledTime)];
     let statusText = 'Pendiente';
     if (status === 'taken') statusText = 'Tomado';
     if (status === 'missed') statusText = 'Omitido';
 
     Alert.alert(
-      item.name,
-      `Dosis programada: ${item.startTime}\nEstado actual: ${statusText}\n${item.dosage} ${item.unit || ''}\n${item.foodInstruction || ''}`,
+      medicine.name,
+      `Dosis programada: ${scheduledTime}\nEstado actual: ${statusText}\n${medicine.dosage} ${medicine.unit || ''}\n${medicine.foodInstruction || ''}`,
       [
         {
           text: 'Marcar como tomado',
-          onPress: () => onMarkTaken(item),
+          onPress: () => onMarkTaken(medicine, scheduledTime),
         },
         {
           text: 'Marcar como omitido',
-          onPress: () => onMarkMissed(item),
+          onPress: () => onMarkMissed(medicine, scheduledTime),
           style: 'destructive',
         },
         {
@@ -305,14 +304,14 @@ export function HomeScreen({
     );
   };
 
-  const handleTakeDoseQuick = (item: Medicine) => {
+  const handleTakeDoseQuick = (medicine: Medicine, scheduledTime: string) => {
     Alert.alert(
       'Registrar toma',
-      `¿Confirmas que has tomado ${item.name} (${item.dosage} ${item.unit || ''})?`,
+      `¿Confirmas que has tomado ${medicine.name} (${medicine.dosage} ${medicine.unit || ''})?`,
       [
         {
           text: 'Sí, tomar',
-          onPress: () => onMarkTaken(item),
+          onPress: () => onMarkTaken(medicine, scheduledTime),
         },
         {
           text: 'Cancelar',
@@ -343,28 +342,28 @@ export function HomeScreen({
             <AppIcon icon={faPills} color={palette.primary} size={28} />
           </View>
         </View>
-        {nextMedicine ? (
+        {nextDose ? (
           <>
-            <Text style={appStyles.heroMedicineName}>{nextMedicine.name}</Text>
+            <Text style={appStyles.heroMedicineName}>{nextDose.medicine.name}</Text>
             <Text style={appStyles.softText}>
-              {nextMedicine.dosage} {nextMedicine.unit || ''} -{' '}
-              {nextMedicine.medicineType || 'Medicamento'}
+              {nextDose.medicine.dosage} {nextDose.medicine.unit || ''} -{' '}
+              {nextDose.medicine.medicineType || 'Medicamento'}
             </Text>
             <View style={appStyles.doseInfoRow}>
               <View style={appStyles.doseInfoBox}>
                 <AppIcon icon={faClock} color={palette.textSoft} size={15} />
-                <Text style={appStyles.doseTime}>{nextMedicine.startTime}</Text>
+                <Text style={appStyles.doseTime}>{nextDose.scheduledTime}</Text>
               </View>
               <View style={appStyles.doseInfoBox}>
                 <AppIcon icon={faUtensils} color={palette.textSoft} size={13} />
                 <Text style={appStyles.doseMeta}>
-                  {nextMedicine.foodInstruction || 'Con alimentos'}
+                  {nextDose.medicine.foodInstruction || 'Con alimentos'}
                 </Text>
               </View>
             </View>
             <TouchableOpacity
               style={appStyles.takeButton}
-              onPress={() => onMarkTaken(nextMedicine)}>
+              onPress={() => onMarkTaken(nextDose.medicine, nextDose.scheduledTime)}>
               <View style={appStyles.iconTextRow}>
                 <AppIcon icon={faCheckCircle} color="#FFFFFF" size={16} />
                 <Text style={appStyles.actionButtonText}>Marcar como tomado</Text>
@@ -372,7 +371,7 @@ export function HomeScreen({
             </TouchableOpacity>
             <TouchableOpacity
               style={appStyles.postponeButton}
-              onPress={() => onMarkMissed(nextMedicine)}>
+              onPress={() => onMarkMissed(nextDose.medicine, nextDose.scheduledTime)}>
               <View style={appStyles.iconTextRow}>
                 <AppIcon icon={faStopwatch} color={palette.red} size={15} />
                 <Text style={appStyles.postponeButtonText}>Posponer 15 min</Text>
@@ -387,28 +386,31 @@ export function HomeScreen({
       </View>
 
       {/* Missed Medicines Section */}
-      {missedMedicines.length > 0 ? (
+      {missedDoses.length > 0 ? (
         <>
           <Text style={appStyles.warningTitle}>Atencion! No tomado</Text>
-          {missedMedicines.map(item => (
-            <View key={item.id} style={appStyles.missedCard}>
-              <View style={appStyles.rowBetween}>
-                <View style={appStyles.missedTitleRow}>
-                  <View style={appStyles.missedIconCircle}>
-                    <AppIcon icon={faSyringe} color={palette.red} size={17} />
+          {missedDoses.map((dose, idx) => {
+            const dk = doseKeyOf(dose.medicine.id, dose.scheduledTime);
+            return (
+              <View key={dk} style={appStyles.missedCard}>
+                <View style={appStyles.rowBetween}>
+                  <View style={appStyles.missedTitleRow}>
+                    <View style={appStyles.missedIconCircle}>
+                      <AppIcon icon={faSyringe} color={palette.red} size={17} />
+                    </View>
+                    <Text style={appStyles.medicineName}>{dose.medicine.name}</Text>
                   </View>
-                  <Text style={appStyles.medicineName}>{item.name}</Text>
+                  <View style={appStyles.missedBadge}>
+                    <AppIcon icon={faExclamationTriangle} color="#FFFFFF" size={10} />
+                    <Text style={appStyles.missedBadgeText}>No tomado</Text>
+                  </View>
                 </View>
-                <View style={appStyles.missedBadge}>
-                  <AppIcon icon={faExclamationTriangle} color="#FFFFFF" size={10} />
-                  <Text style={appStyles.missedBadgeText}>No tomado</Text>
-                </View>
+                <Text style={appStyles.softText}>
+                  {dose.scheduledTime} - {dose.medicine.foodInstruction || 'Sin alimentos'}
+                </Text>
               </View>
-              <Text style={appStyles.softText}>
-                {item.startTime} - {item.foodInstruction || 'Sin alimentos'}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
         </>
       ) : (
         <View style={appStyles.miniSummaryRow}>
@@ -427,32 +429,32 @@ export function HomeScreen({
       </View>
 
       {/* Timeline Flow */}
-      {sortedMedicines.length === 0 ? (
+      {sortedDoses.length === 0 ? (
         <View style={appStyles.emptyCard}>
           <Text style={appStyles.emptyTitle}>Sin medicamentos</Text>
           <Text style={appStyles.softText}>
-            Registra tus medicamentos para ver tu cronograma de hoy aquí.
+            Registra tus medicamentos para ver tu cronograma de hoy aqui.
           </Text>
         </View>
       ) : (
         <View>
-          {sortedMedicines.map((item, index) => {
-            const status = todayStatusByMedication[item.id];
-            const isNext = nextMedicine && nextMedicine.id === item.id;
-            const { hour, ampm } = formatTime12h(item.startTime);
-            const theme = getMedicineTheme(item.name, item.startTime, index);
-            
-            const instructionText = item.notes || item.foodInstruction || 'Sin restricciones';
+          {sortedDoses.map((dose, index) => {
+            const m = dose.medicine;
+            const dk = doseKeyOf(m.id, dose.scheduledTime);
+            const status = todayStatusByDose[dk];
+            const isNext = nextDose && nextDose.medicine.id === m.id && nextDose.scheduledTime === dose.scheduledTime;
+            const { hour, ampm } = formatTime12h(dose.scheduledTime);
+            const theme = getMedicineTheme(m.name, dose.scheduledTime, index);
+
+            const instructionText = m.notes || m.foodInstruction || 'Sin restricciones';
             const instructionIcon = getInstructionIcon(instructionText);
-            const isLast = index === sortedMedicines.length - 1;
-            
-            // Timeline line color below the item
+            const isLast = index === sortedDoses.length - 1;
+
             const lineColor = isNext ? palette.orange : palette.line;
             const cardBorderColor = isNext ? theme.color : palette.line;
 
             return (
-              <View style={appStyles.timelineRow} key={item.id}>
-                {/* Left Column: Time & Line */}
+              <View style={appStyles.timelineRow} key={dk}>
                 <View style={appStyles.timelineLeftColumn}>
                   <View style={appStyles.timelineTimeContainer}>
                     <Text style={[
@@ -468,8 +470,7 @@ export function HomeScreen({
                       {ampm}
                     </Text>
                   </View>
-                  
-                  {/* Vertical line segment */}
+
                   {isLast ? (
                     <View style={appStyles.timelineLineShortDashed} />
                   ) : (
@@ -480,7 +481,6 @@ export function HomeScreen({
                   )}
                 </View>
 
-                {/* Right Column: Card */}
                 <View style={appStyles.timelineRightColumn}>
                   <TouchableOpacity
                     style={[
@@ -488,10 +488,9 @@ export function HomeScreen({
                       isNext && appStyles.timelineCardActive,
                       { borderColor: cardBorderColor }
                     ]}
-                    onPress={() => handleCardPress(item)}
+                    onPress={() => handleCardPress(m, dose.scheduledTime)}
                     activeOpacity={0.8}
                   >
-                    {/* Watermark in background */}
                     <View style={appStyles.timelineWatermark}>
                       <AppIcon
                         icon={theme.watermarkIcon}
@@ -500,7 +499,6 @@ export function HomeScreen({
                       />
                     </View>
 
-                    {/* Status badges */}
                     {status === 'taken' && (
                       <View style={appStyles.timelineStatusBadgeTaken}>
                         <AppIcon icon={faCheckCircle} color={palette.green} size={20} />
@@ -512,34 +510,31 @@ export function HomeScreen({
                       </View>
                     )}
 
-                    {/* Left Icon box */}
                     <View style={[
                       appStyles.timelineIconContainer,
                       { backgroundColor: theme.bg }
                     ]}>
                       <AppIcon
-                        icon={item.medicineType === 'Inyeccion' ? faSyringe : faPills}
+                        icon={m.medicineType === 'Inyeccion' ? faSyringe : faPills}
                         color={theme.color}
                         size={22}
                       />
                     </View>
 
-                    {/* Middle details */}
                     <View style={[
                       appStyles.timelineContentContainer,
-                      isNext && { paddingRight: 95 } // Prevents overlapping with the absolute corner "¡TOCA AHORA!" button
+                      isNext && { paddingRight: 95 }
                     ]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                         <Text style={[appStyles.timelineCardTitle, { flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">
-                          {item.name}
+                          {m.name}
                         </Text>
-                        
-                        {/* Countdown Badge inside card */}
+
                         {isNext && (
                           <View style={[appStyles.pendingBadge, { backgroundColor: '#FFF3D8', flexShrink: 0, marginLeft: 8 }]}>
                             <AppIcon icon={faClock} color={palette.orange} size={9} />
                             <Text style={[appStyles.pendingBadgeText, { color: palette.orange }]}>
-                              {formatTimeLeft(item.startTime)}
+                              {formatTimeLeft(dose.scheduledTime)}
                             </Text>
                           </View>
                         )}
@@ -549,7 +544,7 @@ export function HomeScreen({
                         appStyles.timelineCardSubtitle,
                         { color: theme.color }
                       ]} numberOfLines={1} ellipsizeMode="tail">
-                        {item.dosage} {item.unit || ''} • {FREQUENCIES.find(f => f.hours === item.frequency)?.label || 'Diario'}
+                        {m.dosage} {m.unit || ''} • {FREQUENCIES.find(f => f.hours === m.frequency)?.label || 'Diario'}
                       </Text>
 
                       <View style={appStyles.timelineCardFooter}>
@@ -560,14 +555,13 @@ export function HomeScreen({
                       </View>
                     </View>
 
-                    {/* Corner active button */}
                     {isNext && (
                       <TouchableOpacity
                         style={[
                           appStyles.timelineTocaAhoraButton,
                           { backgroundColor: palette.orange }
                         ]}
-                        onPress={() => handleTakeDoseQuick(item)}
+                        onPress={() => handleTakeDoseQuick(m, dose.scheduledTime)}
                         activeOpacity={0.7}
                       >
                         <Text style={appStyles.timelineTocaAhoraText}>¡Toca Ahora!</Text>

@@ -12,6 +12,7 @@ import {
   ActivityItem,
   AlarmSoundId,
   AppTab,
+  DoseEvent,
   MedicationSuggestion,
   Medicine,
   MedicineForm,
@@ -31,6 +32,7 @@ import {
   subscribeToMedicines,
 } from '../storage/medicationStorage';
 import {
+  getDoseTimes,
   normalizeTime,
   sanitizeDecimal,
   sanitizeMedicineName,
@@ -238,6 +240,9 @@ export function useMedicationManager() {
     });
   }, [hasLoadedPersistedData, handleError, medicines, settings]);
 
+  const doseKey = (medicationId: string, scheduledTime: string) =>
+    `${medicationId}#${scheduledTime}`;
+
   const todayKey = useMemo(() => new Date().toDateString(), []);
 
   const todayActivity = useMemo(
@@ -246,42 +251,77 @@ export function useMedicationManager() {
     [activity, todayKey],
   );
 
+  const todayDoses = useMemo<DoseEvent[]>(() => {
+    const doses: DoseEvent[] = [];
+    medicines.forEach(medicine => {
+      getDoseTimes(medicine.startTime, medicine.frequency).forEach(time => {
+        doses.push({ medicine, scheduledTime: time });
+      });
+    });
+    return doses.sort((a, b) => {
+      const [aH, aM] = a.scheduledTime.split(':').map(Number);
+      const [bH, bM] = b.scheduledTime.split(':').map(Number);
+      return aH * 60 + aM - (bH * 60 + bM);
+    });
+  }, [medicines]);
+
+  const todayStatusByDose = useMemo(() => {
+    const statusMap: Record<string, 'taken' | 'missed'> = {};
+    todayActivity.forEach(item => {
+      const scheduledTime =
+        item.scheduledTime ||
+        medicines.find(m => m.id === item.medicationId)?.startTime ||
+        '08:00';
+      statusMap[doseKey(item.medicationId, scheduledTime)] = item.taken
+        ? 'taken'
+        : 'missed';
+    });
+    return statusMap;
+  }, [todayActivity, medicines]);
+
   const takenTodayCount = useMemo(
-    () => todayActivity.filter(item => item.taken).length,
-    [todayActivity],
+    () =>
+      todayDoses.filter(
+        dose =>
+          todayStatusByDose[doseKey(dose.medicine.id, dose.scheduledTime)] ===
+          'taken',
+      ).length,
+    [todayDoses, todayStatusByDose],
   );
 
-  const adherencePercent = useMemo(() => {
-    if (medicines.length === 0) {
+  const missedTodayCount = useMemo(
+    () =>
+      todayDoses.filter(
+        dose =>
+          todayStatusByDose[doseKey(dose.medicine.id, dose.scheduledTime)] ===
+          'missed',
+      ).length,
+    [todayDoses, todayStatusByDose],
+  );
+
+  const pendingTodayCount = useMemo(() => {
+    if (!todayDoses.length) {
       return 0;
     }
-    return Math.round((takenTodayCount / medicines.length) * 100);
-  }, [medicines.length, takenTodayCount]);
+    return todayDoses.filter(
+      dose =>
+        !todayStatusByDose[doseKey(dose.medicine.id, dose.scheduledTime)],
+    ).length;
+  }, [todayDoses, todayStatusByDose]);
+
+  const totalDailyDoses = todayDoses.length;
+
+  const adherencePercent = useMemo(() => {
+    if (totalDailyDoses === 0) {
+      return 0;
+    }
+    return Math.round((takenTodayCount / totalDailyDoses) * 100);
+  }, [totalDailyDoses, takenTodayCount]);
 
   const selectedDateActivities = useMemo(() => {
     const key = selectedHistoryDate.toDateString();
     return activity.filter(item => new Date(item.date).toDateString() === key);
   }, [activity, selectedHistoryDate]);
-
-  const todayStatusByMedication = useMemo(() => {
-    const statusMap: Record<string, 'taken' | 'missed'> = {};
-    todayActivity.forEach(item => {
-      statusMap[item.medicationId] = item.taken ? 'taken' : 'missed';
-    });
-    return statusMap;
-  }, [todayActivity]);
-
-  const missedTodayCount = useMemo(
-    () => todayActivity.filter(item => !item.taken).length,
-    [todayActivity],
-  );
-
-  const pendingTodayCount = useMemo(() => {
-    if (!medicines.length) {
-      return 0;
-    }
-    return medicines.filter(item => !todayStatusByMedication[item.id]).length;
-  }, [medicines, todayStatusByMedication]);
 
   const selectTab = (tab: AppTab) => {
     if (tab === 'add') {
@@ -367,11 +407,7 @@ export function useMedicationManager() {
       setActivity(current =>
         current.map(item =>
           item.medicationId === editingMedicineId
-            ? {
-                ...item,
-                medicationName: sanitizedForm.name,
-                scheduledTime: sanitizedForm.startTime,
-              }
+            ? { ...item, medicationName: sanitizedForm.name }
             : item,
         ),
       );
@@ -457,34 +493,42 @@ export function useMedicationManager() {
     );
   };
 
-  const markTaken = (medicine: Medicine) => {
-    if (todayStatusByMedication[medicine.id]) {
-      Alert.alert('Ya registrado', 'Este medicamento ya fue marcado hoy.');
+  const markTaken = (
+    medicine: Medicine,
+    scheduledTime = medicine.startTime,
+  ) => {
+    const key = doseKey(medicine.id, scheduledTime);
+    if (todayStatusByDose[key]) {
+      Alert.alert('Ya registrado', 'Esta dosis ya fue marcada hoy.');
       return;
     }
 
     const item: ActivityItem = {
-      id: `${medicine.id}_${Date.now()}`,
+      id: `${medicine.id}_${scheduledTime.replace(/:/g, '-')}_${Date.now()}`,
       medicationId: medicine.id,
       medicationName: medicine.name,
-      scheduledTime: medicine.startTime,
+      scheduledTime,
       date: new Date().toISOString(),
       taken: true,
     };
     setActivity(current => [item, ...current]);
   };
 
-  const markMissed = (medicine: Medicine) => {
-    if (todayStatusByMedication[medicine.id]) {
-      Alert.alert('Ya registrado', 'Este medicamento ya fue marcado hoy.');
+  const markMissed = (
+    medicine: Medicine,
+    scheduledTime = medicine.startTime,
+  ) => {
+    const key = doseKey(medicine.id, scheduledTime);
+    if (todayStatusByDose[key]) {
+      Alert.alert('Ya registrado', 'Esta dosis ya fue marcada hoy.');
       return;
     }
 
     const item: ActivityItem = {
-      id: `${medicine.id}_${Date.now()}`,
+      id: `${medicine.id}_${scheduledTime.replace(/:/g, '-')}_${Date.now()}`,
       medicationId: medicine.id,
       medicationName: medicine.name,
-      scheduledTime: medicine.startTime,
+      scheduledTime,
       date: new Date().toISOString(),
       taken: false,
     };
@@ -509,7 +553,9 @@ export function useMedicationManager() {
     takenTodayCount,
     adherencePercent,
     selectedDateActivities,
-    todayStatusByMedication,
+    todayDoses,
+    todayStatusByDose,
+    totalDailyDoses,
     missedTodayCount,
     pendingTodayCount,
     openNewForm,

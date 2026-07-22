@@ -28,6 +28,11 @@ export type Medicine = {
   userId: string;
 };
 
+export type DoseEvent = {
+  medicine: Medicine;
+  scheduledTime: string;
+};
+
 export type ActivityItem = {
   id: string;
   medicationId: string;

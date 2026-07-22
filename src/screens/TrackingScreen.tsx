@@ -2,7 +2,7 @@ import React from 'react';
 import {ScrollView, Text, View} from 'react-native';
 import {ScreenHeader} from '../components/ScreenHeader';
 import {useAppSettings} from '../context/AppSettingsContext';
-import {ActivityItem, Medicine} from '../types/medication';
+import {ActivityItem, DoseEvent, Medicine} from '../types/medication';
 
 type Props = {
   medicines: Medicine[];
@@ -10,6 +10,9 @@ type Props = {
   takenTodayCount: number;
   missedTodayCount: number;
   adherencePercent: number;
+  todayDoses: DoseEvent[];
+  todayStatusByDose: Record<string, 'taken' | 'missed'>;
+  totalDailyDoses: number;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   profileName: string;
@@ -22,6 +25,9 @@ export function TrackingScreen({
   takenTodayCount,
   missedTodayCount,
   adherencePercent,
+  todayDoses,
+  todayStatusByDose,
+  totalDailyDoses,
   onOpenSettings,
   onOpenProfile,
   profileName,
@@ -47,9 +53,9 @@ export function TrackingScreen({
       <View style={appStyles.metricsRow}>
         <View style={[appStyles.metricCard, appStyles.metricCardTaken]}>
           <Text style={appStyles.metricTitle}>Tomados hoy</Text>
-          <Text style={appStyles.metricValue}>
-            {takenTodayCount}/{medicines.length || 0}
-          </Text>
+<Text style={appStyles.metricValue}>
+             {takenTodayCount}/{totalDailyDoses || 0}
+           </Text>
         </View>
         <View style={[appStyles.metricCard, appStyles.metricCardMissed]}>
           <Text style={appStyles.metricTitle}>Omitidos</Text>

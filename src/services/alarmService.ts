@@ -17,7 +17,7 @@ import {
 } from '../storage/medicationStorage';
 import { ActivityItem, Medicine } from '../types/medication';
 import { AppSettings } from '../types/settings';
-import { getTimeParts } from '../utils/inputSanitizers';
+import { getTimeParts, formatTime } from '../utils/inputSanitizers';
 import {
   scheduleAlarmLaunch,
   cancelAlarmLaunch,
@@ -81,12 +81,12 @@ function getNextDailyTimestamp(
   return tomorrowReminder.getTime();
 }
 
-function createNotificationData(medicine: Medicine, notificationId = '') {
+function createNotificationData(medicine: Medicine, notificationId = '', scheduledTime = medicine.startTime) {
   return {
     notificationId,
     medicationId: medicine.id,
     medicationName: medicine.name,
-    scheduledTime: medicine.startTime,
+    scheduledTime,
     snoozeMinutes: medicine.snoozeMinutes,
     alarmSound: medicine.alarmSound,
   };
@@ -309,6 +309,7 @@ export async function markNotificationDoseAsTaken(data: Record<string, unknown>)
   const alreadyLogged = persisted.activity.some(
     item =>
       item.medicationId === medicationId &&
+      (item.scheduledTime || '') === (data.scheduledTime || '') &&
       new Date(item.date).toDateString() === todayKey,
   );
 

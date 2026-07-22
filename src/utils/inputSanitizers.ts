@@ -69,3 +69,20 @@ export function getTimeParts(value: string) {
     minutes: Number(minutes),
   };
 }
+
+export function getDoseTimes(startTime: string, frequency: number): string[] {
+  const { hours, minutes } = getTimeParts(startTime);
+  const freqHours = Number(frequency) || 24;
+
+  if (freqHours <= 0) {
+    return [formatTime(hours, minutes)];
+  }
+
+  const times: string[] = [];
+  for (let offset = 0; offset < 24; offset += freqHours) {
+    const totalMinutes = ((hours + offset) % 24) * 60 + minutes;
+    times.push(formatTime(Math.floor(totalMinutes / 60), totalMinutes % 60));
+  }
+
+  return times;
+}
